@@ -1,13 +1,27 @@
-name: pablo-test
+name: pdbscan-test
 channels:
   - conda-forge
-  - defaults
 dependencies:
-    # Base depends
-  - python
+  # Base depends
   - pip
+  - python>=3.11
 
-    # Testing
+  # Runtime
+  - typer>=0.14
+
+  # Examples
+  - jupyterlab>=4
+  - ipywidgets>=8
+  - jupyterlab_execute_time
+  - jupyterlab-lsp
+  - jupyterlab_rise
+  - jedi-language-server
+  - jupyterlab_code_formatter
+  - black
+  - isort
+  - snakeviz
+
+  # Testing
   - pytest
   - pytest-cov
   - pytest-xdist
@@ -16,7 +30,18 @@ dependencies:
   # chemistry
   - openff-toolkit-base
   - rdkit
+  - nglview>=3.0.6,<3.1.0
+  - pdbfixer
+  - mdtraj
+  - openmmtools
+  - mdanalysis
+
+  # Data
+  - plotly
+  - matplotlib
+  - polars
+  - pandas
+  - numpy
 
   #- pip:
   #  - codecov
-
