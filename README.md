@@ -85,6 +85,6 @@ Copyright (c) 2025, Josh Mitchell
 
 
 #### Acknowledgements
- 
-Project based on the 
+
+Project based on the
 [OpenFF Cookiecutter](https://github.com/lilyminium/cookiecutter-openff) version 0.1.

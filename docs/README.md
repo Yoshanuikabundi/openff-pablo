@@ -4,7 +4,7 @@ The docs for this project are built with [Sphinx](http://www.sphinx-doc.org/en/m
 To compile the docs, first install the documentation dependencies into a new environment called `pablo-docs`:
 
 ```bash
-mamba env create -n pablo-docs -f ../devtools/conda-envs/docs_env.yaml 
+mamba env create -n pablo-docs -f ../devtools/conda-envs/docs_env.yaml
 ```
 
 Once installed, you can use Sphinx to render the docs:

@@ -10,14 +10,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: debug-statements
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
   - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
     rev: 1.23.2 # or whatever the latest version is at the time
     hooks:
       - id: basedpyright
+        files: "openff"
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: v0.8.6
@@ -26,6 +23,7 @@ repos:
       - id: ruff
         types_or: [python, pyi]
         args: [--fix]
+        files: "openff"
       # Run the formatter.
       - id: ruff-format
         types_or: [python, pyi]

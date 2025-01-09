@@ -1,7 +1,7 @@
 [build-system]
 requires = [
   "setuptools >= 40.9.0",
-  "versioneer[toml]==0.26",
+  "versioneer[toml]==0.29",
   "wheel",
 ]
 build-backend = "setuptools.build_meta"
@@ -40,6 +40,14 @@ doc = [
 # [project.urls]
 # source = "https://github.com/openforcefield/openff-pablo"
 # documentation = "https://openff-pablo.readthedocs.io"
+
+[tool.versioneer]
+# Automatic version numbering scheme
+VCS = "git"
+style = "pep440"
+versionfile_source = "openff/pablo/_version.py"
+versionfile_build = "openff/pablo/_version.py"
+tag_prefix = "v"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

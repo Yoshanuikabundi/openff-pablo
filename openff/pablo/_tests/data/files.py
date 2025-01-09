@@ -17,6 +17,4 @@ __all__ = [
 
 from pkg_resources import resource_filename
 
-EXAMPLE_SDF_WITH_CHARGES = resource_filename(
-    __name__, "C1CC1.sdf"
-)
+EXAMPLE_SDF_WITH_CHARGES = resource_filename(__name__, "C1CC1.sdf")

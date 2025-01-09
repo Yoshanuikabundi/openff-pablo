@@ -29,9 +29,10 @@ dependencies:
   - codecov
 
   # chemistry
-  - openff-toolkit-base
+  - openff-toolkit-base>=0.14.7
   - rdkit
   - nglview>=3.0.6,<3.1.0
+  - openmm
 
   # Data
   - numpy

@@ -5,13 +5,7 @@ Classes for defining custom residues.
 from copy import deepcopy
 from dataclasses import InitVar, dataclass
 from functools import cached_property
-from typing import (
-    Collection,
-    Iterator,
-    Literal,
-    Mapping,
-    Self,
-)
+from typing import Collection, Iterator, Literal, Mapping, Self
 
 from openff.toolkit import Molecule
 from openff.units import elements, unit

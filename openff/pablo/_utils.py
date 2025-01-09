@@ -2,7 +2,8 @@ from typing import Iterable, Iterator, TypeVar, TypeVarTuple, no_type_check
 
 from pint import Quantity
 
-from openff.toolkit.topology.molecule import MoleculeLike, _SimpleMolecule
+from openff.toolkit.topology._mm_molecule import _SimpleMolecule
+from openff.toolkit.topology.molecule import MoleculeLike
 from openff.toolkit.utils import UndefinedStereochemistryError
 from openff.units import unit
 

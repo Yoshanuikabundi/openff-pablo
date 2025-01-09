@@ -1,19 +1,12 @@
-from typing import Union, Optional, List, Dict, Iterable, Tuple
-import uuid
-from io import StringIO
-from numpy.typing import NDArray
-import numpy as np
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
+import nglview
+import numpy as np
+import openmm
 import rdkit.Chem
 import rdkit.Chem.Draw
 from IPython.display import SVG
-import nglview
-from nglview.base_adaptor import Structure, Trajectory
-
-from openff.toolkit import Molecule, Topology
-from openff.units import unit
-
-import openmm
+from openff.toolkit import Molecule
 
 DEFAULT_WIDTH = 400
 DEFAULT_HEIGHT = 300
@@ -21,10 +14,12 @@ DEFAULT_HEIGHT = 300
 Color = Iterable[float]
 BondIndices = Tuple[int, int]
 
+
 def unicode_to_ascii(s):
     import unicodedata
-    
-    return unicodedata.normalize('NFKD', s).encode('ascii','ignore').decode()
+
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+
 
 def draw_molecule(
     molecule: Union[Molecule, rdkit.Chem.rdchem.Mol],
@@ -234,29 +229,36 @@ def draw_molecule(
     svg_contents = drawer.GetDrawingText()
     return SVG(svg_contents)
 
-from openff.units import ensure_quantity
-import mdtraj
-import numpy
-import nglview
+
 from pathlib import Path
+
+import mdtraj
+from openff.units import ensure_quantity
+
 
 def nglview_show_openmm(topology, positions, image_molecules=False):
     top = mdtraj.Topology.from_openmm(topology)
-    
+
     if isinstance(positions, str) or isinstance(positions, Path):
         traj = mdtraj.load(positions, top=top)
         if image_molecules:
             traj.image_molecules(inplace=True)
     else:
-        positions = ensure_quantity(positions, "openmm").value_in_unit(openmm.unit.nanometer)
+        positions = ensure_quantity(positions, "openmm").value_in_unit(
+            openmm.unit.nanometer
+        )
         xyz = np.asarray([positions])
         box_vectors = topology.getPeriodicBoxVectors()
         if box_vectors is not None:
-            l1, l2, l3, alpha, beta, gamma = mdtraj.utils.box_vectors_to_lengths_and_angles(
-                *np.asarray(box_vectors.value_in_unit(openmm.unit.nanometer))
+            l1, l2, l3, alpha, beta, gamma = (
+                mdtraj.utils.box_vectors_to_lengths_and_angles(
+                    *np.asarray(box_vectors.value_in_unit(openmm.unit.nanometer))
+                )
             )
             unitcell_angles, unitcell_lengths = [alpha, beta, gamma], [l1, l2, l3]
         else:
             unitcell_angles, unitcell_lengths = None, None
-        traj = mdtraj.Trajectory(xyz, top, unitcell_lengths=unitcell_lengths, unitcell_angles=unitcell_angles)
+        traj = mdtraj.Trajectory(
+            xyz, top, unitcell_lengths=unitcell_lengths, unitcell_angles=unitcell_angles
+        )
     return nglview.show_mdtraj(traj)

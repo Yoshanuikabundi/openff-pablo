@@ -5,13 +5,16 @@ from pathlib import Path
 from typing import Iterable
 
 import numpy as np
-from typing_extensions import assert_never
-
 from openff.toolkit import Molecule, Topology
 from openff.units import elements, unit
+from typing_extensions import assert_never
 
 from ._pdb_data import PdbData, ResidueMatch
-from ._utils import assign_stereochemistry_from_3d, cryst_to_box_vectors, sort_tuple
+from ._utils import (
+    assign_stereochemistry_from_3d,
+    cryst_to_box_vectors,
+    sort_tuple,
+)
 from .ccd import CCD_RESIDUE_DEFINITION_CACHE
 from .exceptions import (
     MultipleMatchingResidueDefinitionsError,
