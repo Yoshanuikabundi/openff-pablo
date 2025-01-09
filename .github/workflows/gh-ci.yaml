@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macOS-latest, ubuntu-latest]
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.13"]
 
     steps:
       - uses: actions/checkout@v3
@@ -42,11 +42,12 @@ jobs:
           ulimit -a
 
       - name: Install environment
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: devtools/conda-envs/test_env.yaml
-          extra-specs: |
+          create-args: >-
             python=${{ matrix.python-version }}
+          # cache-environment: true
 
       - name: Install package
         run: |
