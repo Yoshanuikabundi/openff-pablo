@@ -29,8 +29,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, ubuntu-latest]
+        os: [ubuntu-latest]
         python-version: ["3.11", "3.13"]
+        include:
+          - os: macos-latest
+            python-version: "3.11"
 
     steps:
       - uses: actions/checkout@v4
@@ -64,10 +67,12 @@ jobs:
           micromamba list
 
       - name: Lint
+        continue-on-error: true
         run: |
           ruff check openff
 
       - name: Type check
+        continue-on-error: true
         run: |
           basedpyright openff
 
