@@ -24,9 +24,9 @@ dependencies:
 
   # Testing
   - pytest
-  - pytest-cov
+  # - pytest-cov
   - pytest-xdist
-  - codecov
+  # - codecov
 
   # chemistry
   - openff-toolkit-base>=0.14.7
