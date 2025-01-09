@@ -2,12 +2,12 @@ import itertools
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
-from typing import Iterable
+from collections.abc import Iterable
 
 import numpy as np
 from openff.toolkit import Molecule, Topology
 from openff.units import elements, unit
-from typing_extensions import assert_never
+from typing import assert_never
 
 from ._pdb_data import PdbData, ResidueMatch
 from ._utils import (
@@ -93,7 +93,8 @@ def topology_from_pdb(
     path: PathLike[str],
     unknown_molecules: Iterable[Molecule] = [],
     residue_database: Mapping[
-        str, Iterable[ResidueDefinition]
+        str,
+        Iterable[ResidueDefinition],
     ] = CCD_RESIDUE_DEFINITION_CACHE,
     additional_substructures: Iterable[ResidueDefinition] = [],
     use_canonical_names: bool = False,
@@ -220,7 +221,9 @@ def topology_from_pdb(
         chemical_data: Molecule | ResidueMatch
         if len(matches) == 0:
             unknown_molecule = _load_unknown_residue(
-                data, res_atom_idcs, unknown_molecules
+                data,
+                res_atom_idcs,
+                unknown_molecules,
             )
             if unknown_molecule is None:
                 raise NoMatchingResidueDefinitionError(res_atom_idcs, data)
@@ -311,7 +314,7 @@ def topology_from_pdb(
 def check_all_conects(topology: Topology, data: PdbData):
     all_bonds: set[tuple[int, int]] = {
         tuple(
-            sorted([topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)])
+            sorted([topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)]),
         )
         for bond in topology.bonds
     }  # type:ignore[assignment]

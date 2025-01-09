@@ -5,7 +5,8 @@ Classes for defining custom residues.
 from copy import deepcopy
 from dataclasses import InitVar, dataclass
 from functools import cached_property
-from typing import Collection, Iterator, Literal, Mapping, Self
+from typing import Literal, Self
+from collections.abc import Collection, Iterator, Mapping
 
 from openff.toolkit import Molecule
 from openff.units import elements, unit
@@ -71,19 +72,19 @@ class ResidueDefinition:
                 f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond",
                 self,
             )
-        if len(set(atom.name for atom in self.atoms)) != len(self.atoms):
+        if len({atom.name for atom in self.atoms}) != len(self.atoms):
             raise ValueError(
-                f"{self.residue_name}: All atoms must have unique canonical names"
+                f"{self.residue_name}: All atoms must have unique canonical names",
             )
 
         all_leaving_atoms = {atom.name for atom in self.atoms if atom.leaving}
         assigned_leaving_atoms = self.prior_bond_leaving_atoms.union(
-            self.posterior_bond_leaving_atoms
+            self.posterior_bond_leaving_atoms,
         )
         unassigned_leaving_atoms = all_leaving_atoms.difference(assigned_leaving_atoms)
         if len(unassigned_leaving_atoms) != 0:
             raise ValueError(
-                f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}"
+                f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}",
             )
 
     @classmethod
@@ -106,7 +107,7 @@ class ResidueDefinition:
                     charge=atom.formal_charge.m_as(unit.elementary_charge),  # type: ignore
                     stereo=atom.stereochemistry,
                     aromatic=atom.is_aromatic,
-                )
+                ),
             )
         bonds: list[BondDefinition] = []
         for bond in molecule.bonds:
@@ -117,7 +118,7 @@ class ResidueDefinition:
                     order=bond.bond_order,
                     aromatic=bond.is_aromatic,
                     stereo=bond.stereochemistry,
-                )
+                ),
             )
 
         return cls(
@@ -200,7 +201,7 @@ class ResidueDefinition:
         molecule.properties.update(
             {
                 "linking_bond": self.linking_bond,
-            }
+            },
         )
 
         return molecule
@@ -216,12 +217,12 @@ class ResidueDefinition:
                     raise ValueError(
                         f"synonym {synonym} degenerately defined for canonical"
                         + f" names {mapping[synonym]} and {atom.name} in"
-                        + f" residue {self.residue_name}"
+                        + f" residue {self.residue_name}",
                     )
                 if synonym in canonical_names:
                     raise ValueError(
                         f"synonym {synonym} of atom {atom.name} clashes with"
-                        + f" another canonical name in residue {self.residue_name}"
+                        + f" another canonical name in residue {self.residue_name}",
                     )
                 mapping[synonym] = atom
         return mapping
@@ -244,7 +245,7 @@ class ResidueDefinition:
                     filter(
                         lambda x: x not in checked_atoms,
                         self.atoms_bonded_to(atom_name),
-                    )
+                    ),
                 )
             checked_atoms.add(atom_name)
 

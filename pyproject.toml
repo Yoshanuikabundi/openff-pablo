@@ -1,7 +1,7 @@
 [build-system]
 requires = [
   "setuptools >= 40.9.0",
-  "versioneer[toml]==0.29",
+  "versioningit",
   "wheel",
 ]
 build-backend = "setuptools.build_meta"
@@ -41,13 +41,7 @@ doc = [
 # source = "https://github.com/openforcefield/openff-pablo"
 # documentation = "https://openff-pablo.readthedocs.io"
 
-[tool.versioneer]
-# Automatic version numbering scheme
-VCS = "git"
-style = "pep440"
-versionfile_source = "openff/pablo/_version.py"
-versionfile_build = "openff/pablo/_version.py"
-tag_prefix = "v"
+[tool.versioningit]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -76,3 +70,10 @@ reportUnnecessaryTypeIgnoreComment = "error"
 reportPrivateUsage = "information"
 
 strictGenericNarrowing = true
+
+[tool.ruff]
+namespace-packages = ["openff/pablo/"]
+
+[tool.ruff.lint.isort]
+known-third-party = ["openff.toolkit", "openff.utilities", "openff.units"]
+known-first-party = ["openff.pablo"]

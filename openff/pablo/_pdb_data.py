@@ -1,7 +1,8 @@
 import dataclasses
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, Iterable, Iterator, Mapping, Self, Sequence
+from typing import Any, Self
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 
 from ._utils import __UNSET__, dec_hex, with_neighbours
 from .residue import AtomDefinition, ResidueDefinition
@@ -234,7 +235,7 @@ class PdbData:
                 self.chain_id,
                 self.res_seq,
                 self.i_code,
-            )
+            ),
         ):
             if prev == residue_info or prev is None:
                 indices.append(atom_idx)
@@ -268,7 +269,8 @@ class PdbData:
             if len(matches) == 0:
                 for residue_definition in additional_substructures:
                     match = self.subset_matches_residue(
-                        res_atom_idcs, residue_definition
+                        res_atom_idcs,
+                        residue_definition,
                     )
                     if match is not None:
                         matches.append(match)
@@ -346,7 +348,7 @@ class PdbData:
 
         # Skip non-linking definitions with the wrong number of atoms
         if residue_definition.linking_bond is None and len(
-            residue_definition.atoms
+            residue_definition.atoms,
         ) != len(res_atom_idcs):
             return None
 
@@ -358,7 +360,7 @@ class PdbData:
         except KeyError:
             return None
 
-        matched_atoms = set(atom.name for atom in index_to_atomdef.values())
+        matched_atoms = {atom.name for atom in index_to_atomdef.values()}
 
         # Fail to match if any atoms in PDB file got matched to more than one name
         if len(matched_atoms) != len(res_atom_idcs):
@@ -378,10 +380,10 @@ class PdbData:
         # - both leaving fragments
         if any(not atom.leaving for atom in missing_atoms):
             return None
-        elif set(atom.name for atom in missing_atoms) in [
+        elif {atom.name for atom in missing_atoms} in [
             set(),
             residue_definition.prior_bond_leaving_atoms.union(
-                residue_definition.posterior_bond_leaving_atoms
+                residue_definition.posterior_bond_leaving_atoms,
             ),
             residue_definition.prior_bond_leaving_atoms,
             residue_definition.posterior_bond_leaving_atoms,

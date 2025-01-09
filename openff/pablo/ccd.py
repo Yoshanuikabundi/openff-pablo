@@ -7,7 +7,8 @@ import gzip
 from copy import deepcopy
 from io import StringIO
 from pathlib import Path
-from typing import Callable, Iterator, Mapping, no_type_check
+from typing import no_type_check
+from collections.abc import Callable, Iterator, Mapping
 from urllib.request import urlopen
 
 from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
@@ -54,7 +55,8 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         path: Path,
         preload: list[str] = [],
         patches: Mapping[
-            str, Callable[[ResidueDefinition], list[ResidueDefinition]]
+            str,
+            Callable[[ResidueDefinition], list[ResidueDefinition]],
         ] = {},
     ):
         self._path = path.resolve()
@@ -62,7 +64,8 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
 
         self._definitions: dict[str, list[ResidueDefinition]] = {}
         self._patches: dict[
-            str, Callable[[ResidueDefinition], list[ResidueDefinition]]
+            str,
+            Callable[[ResidueDefinition], list[ResidueDefinition]],
         ] = dict(patches)
 
         self._load_protonation_variants()
@@ -112,7 +115,9 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         self._add_definition(definition, res_name)
 
     def _add_definition(
-        self, definition: ResidueDefinition, res_name: str | None = None
+        self,
+        definition: ResidueDefinition,
+        res_name: str | None = None,
     ) -> None:
         if res_name is None:
             res_name = definition.residue_name.upper()
@@ -157,23 +162,23 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             assert child_def.parent_residue_name is not None
             parent_def = parent_definitions[child_def.parent_residue_name]
 
-            child_bonds = set(
+            child_bonds = {
                 tuple(sorted([bond.atom1, bond.atom2])) for bond in child_def.bonds
-            )
-            child_atoms = set(atom.name for atom in child_def.atoms)
-            parent_bonds = set(
+            }
+            child_atoms = {atom.name for atom in child_def.atoms}
+            parent_bonds = {
                 tuple(sorted([bond.atom1, bond.atom2])) for bond in parent_def.bonds
-            )
-            parent_atoms = set(atom.name for atom in parent_def.atoms)
-            parent_leaver_names = set(
+            }
+            parent_atoms = {atom.name for atom in parent_def.atoms}
+            parent_leaver_names = {
                 atom.name for atom in parent_def.atoms if atom.leaving
-            )
-            parent_leaver_bonds = set(
+            }
+            parent_leaver_bonds = {
                 bond
                 for bond in parent_def.bonds
                 if bond.atom1 in parent_leaver_names
                 or bond.atom2 in parent_leaver_names
-            )
+            }
 
             # Identify the linking embedded fragments and put the leaving atoms back in
             if (
@@ -193,13 +198,15 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
                     atoms=tuple(
                         [
                             *filter(
-                                lambda x: x.name not in linking_atoms, child_def.atoms
+                                lambda x: x.name not in linking_atoms,
+                                child_def.atoms,
                             ),
                             *filter(
-                                lambda x: x.name in linking_atoms, parent_def.atoms
+                                lambda x: x.name in linking_atoms,
+                                parent_def.atoms,
                             ),
                             *filter(lambda x: x.leaving, parent_def.atoms),
-                        ]
+                        ],
                     ),
                     bonds=tuple(parent_leaver_bonds.union(child_def.bonds)),
                 )
@@ -209,7 +216,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
                     dataclasses.replace(
                         child_def,
                         residue_name=parent_def.residue_name,
-                    )
+                    ),
                 )
 
     def _download_cif(self, resname: str) -> str:
@@ -257,7 +264,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
                     synonyms=tuple(
                         [row[altAtomNameCol]]
                         if row[altAtomNameCol] != row[atomNameCol]
-                        else []
+                        else [],
                     ),
                     symbol=row[symbolCol][0:1].upper() + row[symbolCol][1:].lower(),
                     leaving=row[leavingCol] == "Y",
@@ -307,7 +314,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             return True
         if not isinstance(value, str):
             raise TypeError(
-                f"CcdCache contains residue names of type str, not {type(value)}"
+                f"CcdCache contains residue names of type str, not {type(value)}",
             )
 
         try:
@@ -341,7 +348,7 @@ def fix_caps(res: ResidueDefinition) -> list[ResidueDefinition]:
                 )
                 for atom in res.atoms
             ],
-        )
+        ),
     ]
 
 
@@ -367,12 +374,12 @@ def add_synonyms(res: ResidueDefinition) -> list[ResidueDefinition]:
                         {
                             *atom.synonyms,
                             *ATOM_NAME_SYNONYMS[res.residue_name].get(atom.name, []),
-                        }
+                        },
                     ),
                 )
                 for atom in res.atoms
             ),
-        )
+        ),
     ]
 
 
@@ -457,7 +464,11 @@ def combine_patches(
 
 # TODO: Fill in this data
 PEPTIDE_BOND = BondDefinition(
-    atom1="C", atom2="N", order=1, aromatic=False, stereo=None
+    atom1="C",
+    atom2="N",
+    order=1,
+    aromatic=False,
+    stereo=None,
 )
 LINKING_TYPES: dict[str, BondDefinition | None] = {
     # "D-beta-peptide, C-gamma linking".upper(): [],

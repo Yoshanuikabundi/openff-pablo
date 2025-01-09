@@ -1,4 +1,5 @@
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Dict, List, Optional, Tuple, Union
 
 import nglview
 import numpy as np
@@ -12,7 +13,7 @@ DEFAULT_WIDTH = 400
 DEFAULT_HEIGHT = 300
 
 Color = Iterable[float]
-BondIndices = Tuple[int, int]
+BondIndices = tuple[int, int]
 
 
 def unicode_to_ascii(s):
@@ -22,19 +23,17 @@ def unicode_to_ascii(s):
 
 
 def draw_molecule(
-    molecule: Union[Molecule, rdkit.Chem.rdchem.Mol],
+    molecule: Molecule | rdkit.Chem.rdchem.Mol,
     *,
     width: int = DEFAULT_WIDTH,
     height: int = DEFAULT_HEIGHT,
-    highlight_atoms: Optional[Union[List[int], Dict[int, Color]]] = None,
-    highlight_bonds: Optional[
-        Union[List[BondIndices], Dict[BondIndices, Color]]
-    ] = None,
-    atom_notes: Optional[Dict[int, str]] = None,
-    bond_notes: Optional[Dict[BondIndices, str]] = None,
-    emphasize_atoms: Optional[List[int]] = None,
-    explicit_hydrogens: Optional[bool] = None,
-    color_by_element: Optional[bool] = None,
+    highlight_atoms: list[int] | dict[int, Color] | None = None,
+    highlight_bonds: None | (list[BondIndices] | dict[BondIndices, Color]) = None,
+    atom_notes: dict[int, str] | None = None,
+    bond_notes: dict[BondIndices, str] | None = None,
+    emphasize_atoms: list[int] | None = None,
+    explicit_hydrogens: bool | None = None,
+    color_by_element: bool | None = None,
 ) -> SVG:
     """Draw a molecule
 
@@ -228,37 +227,3 @@ def draw_molecule(
     # Return an SVG object that we can view in notebook
     svg_contents = drawer.GetDrawingText()
     return SVG(svg_contents)
-
-
-from pathlib import Path
-
-import mdtraj
-from openff.units import ensure_quantity
-
-
-def nglview_show_openmm(topology, positions, image_molecules=False):
-    top = mdtraj.Topology.from_openmm(topology)
-
-    if isinstance(positions, str) or isinstance(positions, Path):
-        traj = mdtraj.load(positions, top=top)
-        if image_molecules:
-            traj.image_molecules(inplace=True)
-    else:
-        positions = ensure_quantity(positions, "openmm").value_in_unit(
-            openmm.unit.nanometer
-        )
-        xyz = np.asarray([positions])
-        box_vectors = topology.getPeriodicBoxVectors()
-        if box_vectors is not None:
-            l1, l2, l3, alpha, beta, gamma = (
-                mdtraj.utils.box_vectors_to_lengths_and_angles(
-                    *np.asarray(box_vectors.value_in_unit(openmm.unit.nanometer))
-                )
-            )
-            unitcell_angles, unitcell_lengths = [alpha, beta, gamma], [l1, l2, l3]
-        else:
-            unitcell_angles, unitcell_lengths = None, None
-        traj = mdtraj.Trajectory(
-            xyz, top, unitcell_lengths=unitcell_lengths, unitcell_angles=unitcell_angles
-        )
-    return nglview.show_mdtraj(traj)

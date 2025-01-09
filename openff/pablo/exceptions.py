@@ -8,7 +8,8 @@ __all__ = [
 ]
 
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
     from openff.pablo._pdb_data import PdbData, ResidueMatch
@@ -21,7 +22,7 @@ class NoMatchingResidueDefinitionError(ValueError):
         i = res_atom_idcs[0]
         super().__init__(
             "No residue definitions covered all atoms in residue"
-            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}"
+            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}",
         )
 
 
@@ -35,5 +36,5 @@ class MultipleMatchingResidueDefinitionsError(ValueError):
         i = res_atom_idcs[0]
         super().__init__(
             f"{len(matches)} residue definitions matched residue "
-            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}"
+            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}",
         )

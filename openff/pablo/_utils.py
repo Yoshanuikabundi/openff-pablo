@@ -1,11 +1,11 @@
-from typing import Iterable, Iterator, TypeVar, TypeVarTuple, no_type_check
-
-from pint import Quantity
+from collections.abc import Iterable, Iterator
+from typing import TypeVar, TypeVarTuple, no_type_check
 
 from openff.toolkit.topology._mm_molecule import _SimpleMolecule
 from openff.toolkit.topology.molecule import MoleculeLike
 from openff.toolkit.utils import UndefinedStereochemistryError
 from openff.units import unit
+from pint import Quantity
 
 __all__ = [
     "unwrap",
@@ -59,7 +59,8 @@ def flatten(container: Iterable[Iterable[T]]) -> Iterator[T]:
 
 
 def with_neighbours(
-    iterable: Iterable[T], default: U = None
+    iterable: Iterable[T],
+    default: U = None,
 ) -> Iterator[tuple[T | U, T, T | U]]:
     iterator = iter(iterable)
 
@@ -125,7 +126,12 @@ def dec_hex(s: str) -> int:
 
 
 def cryst_to_box_vectors(
-    a: float, b: float, c: float, alpha: float, beta: float, gamma: float
+    a: float,
+    b: float,
+    c: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
 ) -> Quantity:
     @no_type_check
     def inner(a, b, c, alpha, beta, gamma):
@@ -170,7 +176,7 @@ def assign_stereochemistry_from_3d(molecule: MoleculeLike):
                 else:
                     raise UndefinedStereochemistryError(
                         "In from_pdb: Expected atom stereochemistry of R or S. "
-                        f"Got {stereo_code} instead."
+                        f"Got {stereo_code} instead.",
                     )
             offatom._stereochemistry = stereochemistry
 
@@ -183,7 +189,8 @@ def assign_stereochemistry_from_3d(molecule: MoleculeLike):
                 stereochemistry = "E"
             elif tag == BondStereo.STEREOTRANS or tag == BondStereo.STEREOCIS:
                 raise ValueError(
-                    f"Expected RDKit bond stereochemistry of E or Z, got {tag} instead"
+                    f"Expected RDKit bond stereochemistry of E or Z, got {tag} instead",
                 )
             offbond._stereochemistry = stereochemistry
-        inner(molecule)
+
+    inner(molecule)
