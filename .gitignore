@@ -112,3 +112,5 @@ poetry.lock
 
 # ruff
 .ruff_cache
+
+.ccd_cache
