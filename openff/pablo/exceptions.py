@@ -11,7 +11,7 @@ __all__ = [
 from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
-    from openff.pdbscan.pdb._pdb_data import PdbData, ResidueMatch
+    from openff.pablo._pdb_data import PdbData, ResidueMatch
 
 
 class NoMatchingResidueDefinitionError(ValueError):

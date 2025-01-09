@@ -14,7 +14,7 @@ from typing import (
 )
 
 from openff.toolkit import Molecule
-from openff.units import elements
+from openff.units import elements, unit
 
 __all__ = [
     "AtomDefinition",
@@ -102,14 +102,14 @@ class ResidueDefinition:
         parent_residue_name: str | None = None,
     ) -> Self:
         atoms: list[AtomDefinition] = []
-        for i, atom in enumerate(molecule.atoms):
+        for atom in molecule.atoms:
             atoms.append(
                 AtomDefinition(
                     name=atom.name,
                     synonyms=(),
                     symbol=atom.symbol,
                     leaving=bool(atom.metadata.get("leaving_atom")),
-                    charge=atom.formal_charge,
+                    charge=atom.formal_charge.m_as(unit.elementary_charge),  # type: ignore
                     stereo=atom.stereochemistry,
                     aromatic=atom.is_aromatic,
                 )
@@ -180,7 +180,7 @@ class ResidueDefinition:
 
     def to_openff_molecule(self) -> Molecule:
         molecule = Molecule()
-        atoms = {}
+        atoms: dict[str, int] = {}
         for atom in self.atoms:
             atoms[atom.name] = molecule.add_atom(
                 atomic_number=elements.NUMBERS[atom.symbol],

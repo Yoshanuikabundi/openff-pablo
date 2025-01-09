@@ -17,7 +17,7 @@ __all__ = [
 # Handle versioneer
 from ._version import get_versions
 
-versions = get_versions()
-__version__ = versions["version"]
-__git_revision__ = versions["full-revisionid"]
+versions = get_versions()  # type: ignore[unknownType]
+__version__: str = versions["version"]  # type: ignore[assignment]
+__git_revision__: str = versions["full-revisionid"]  # type: ignore[assignment]
 del get_versions, versions

@@ -2,7 +2,7 @@ import itertools
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable
 
 import numpy as np
 from typing_extensions import assert_never
@@ -30,9 +30,9 @@ def _load_unknown_residue(
     unknown_molecules: Iterable[Molecule],
 ) -> Molecule | None:
     conects: set[tuple[int, int]] = set()
-    serial_to_mol_index = {}
+    serial_to_mol_index: dict[int, int] = {}
     pdbmol = Molecule()
-    for i, pdb_index in enumerate(indices):
+    for pdb_index in indices:
         serial_to_mol_index[data.serial[pdb_index]] = pdbmol.add_atom(
             atomic_number=elements.NUMBERS[data.element[pdb_index]],
             formal_charge=data.charge[pdb_index],
@@ -288,7 +288,7 @@ def topology_from_pdb(
         offmol.add_default_hierarchy_schemes()
 
     topology = Topology.from_molecules(molecules)
-    topology.set_positions(np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom)
+    topology.set_positions(np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom)  # type: ignore
 
     if set_stereochemistry:
         for molecule in topology.molecules:
@@ -315,7 +315,7 @@ def check_all_conects(topology: Topology, data: PdbData):
     index_of = {serial: i for i, serial in enumerate(data.serial)}
 
     conect_bonds: set[tuple[int, int]] = set()
-    for atom, (i_idx, js) in zip(topology.atoms, enumerate(data.conects)):
+    for i_idx, js in enumerate(data.conects):
         for j in js:
             j_idx = index_of[j]
             conect_bonds.add((i_idx, j_idx) if i_idx < j_idx else (j_idx, i_idx))
@@ -358,6 +358,7 @@ def add_to_molecule(
     # Identify the previous linking atom
     linking_atom_idx: None | int = None
     if residue_match.expect_prior_bond:
+        assert residue_match.residue_definition.linking_bond is not None
         linking_atom_name = residue_match.residue_definition.linking_bond.atom1
         for i in reversed(range(this_molecule.n_atoms)):
             if this_molecule.atom(i).metadata["canonical_name"] == linking_atom_name:

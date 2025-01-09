@@ -1,7 +1,6 @@
 import dataclasses
 from dataclasses import dataclass, field
 from functools import cached_property
-from symtable import Symbol
 from typing import Any, Iterable, Iterator, Mapping, Self, Sequence
 
 from ._utils import __UNSET__, dec_hex, with_neighbours
@@ -173,12 +172,12 @@ class PdbData:
 
     @classmethod
     def parse_pdb(cls, lines: Iterable[str]) -> Self:
-        conects = {}
+        conects: dict[int, set[int]] = {}
         # Read all CONECT records
         for line in lines:
             if line.startswith("CONECT "):
                 a = int(line[6:11])
-                bs = []
+                bs: list[int] = []
                 for start, stop in [(11, 16), (16, 21), (21, 26), (26, 31)]:
                     try:
                         b = int(line[start:stop])
@@ -356,7 +355,7 @@ class PdbData:
             index_to_atomdef = {
                 i: residue_definition.name_to_atom[self.name[i]] for i in res_atom_idcs
             }
-        except KeyError as e:
+        except KeyError:
             return None
 
         matched_atoms = set(atom.name for atom in index_to_atomdef.values())

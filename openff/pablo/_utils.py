@@ -1,8 +1,8 @@
-from typing import Iterable, Iterator, TypeVar, TypeVarTuple
+from typing import Iterable, Iterator, TypeVar, TypeVarTuple, no_type_check
 
 from pint import Quantity
 
-from openff.toolkit import Molecule
+from openff.toolkit.topology.molecule import MoleculeLike, _SimpleMolecule
 from openff.toolkit.utils import UndefinedStereochemistryError
 from openff.units import unit
 
@@ -18,6 +18,8 @@ __all__ = [
 T = TypeVar("T")
 U = TypeVar("U")
 Ts = TypeVarTuple("Ts")
+
+type CIFValue = str | float | int
 
 
 class __UNSET__:
@@ -116,49 +118,71 @@ def dec_hex(s: str) -> int:
     except ValueError:
         n = len(s)
         parsed_as_hex = int(s, 16)
-        smallest_hex = 0xA * 16 ** (n - 1)
-        largest_dec = 10**n - 1
+        smallest_hex: int = 0xA * 16 ** (n - 1)
+        largest_dec: int = 10**n - 1
         return parsed_as_hex - smallest_hex + largest_dec + 1
 
 
 def cryst_to_box_vectors(
     a: float, b: float, c: float, alpha: float, beta: float, gamma: float
 ) -> Quantity:
-    import openmm.unit
-    from openmm.app.internal.unitcell import computePeriodicBoxVectors
-    from openmm.unit import (
-        nanometer as openmm_unit_nanometer,  # type: ignore[import-not-found]
-    )
+    @no_type_check
+    def inner(a, b, c, alpha, beta, gamma):
+        import openmm.unit
+        from openmm.app.internal.unitcell import computePeriodicBoxVectors
+        from openmm.unit import nanometer as openmm_unit_nanometer
 
-    box_vectors = computePeriodicBoxVectors(
-        openmm.unit.Quantity(a, openmm.unit.angstrom),
-        openmm.unit.Quantity(b, openmm.unit.angstrom),
-        openmm.unit.Quantity(c, openmm.unit.angstrom),
-        openmm.unit.Quantity(alpha, openmm.unit.degree),
-        openmm.unit.Quantity(beta, openmm.unit.degree),
-        openmm.unit.Quantity(gamma, openmm.unit.degree),
-    )
-    return box_vectors.value_in_unit(openmm_unit_nanometer) * unit.nanometer
+        box_vectors = computePeriodicBoxVectors(
+            openmm.unit.Quantity(a, openmm.unit.angstrom),
+            openmm.unit.Quantity(b, openmm.unit.angstrom),
+            openmm.unit.Quantity(c, openmm.unit.angstrom),
+            openmm.unit.Quantity(alpha, openmm.unit.degree),
+            openmm.unit.Quantity(beta, openmm.unit.degree),
+            openmm.unit.Quantity(gamma, openmm.unit.degree),
+        )
+        return box_vectors.value_in_unit(openmm_unit_nanometer) * unit.nanometer
+
+    return inner(a, b, c, alpha, beta, gamma)  # type: ignore
 
 
-def assign_stereochemistry_from_3d(molecule: Molecule):
-    from rdkit.Chem import AssignStereochemistryFrom3D
+def assign_stereochemistry_from_3d(molecule: MoleculeLike):
+    @no_type_check
+    def inner(molecule):
+        from rdkit.Chem import AssignStereochemistryFrom3D, BondStereo
 
-    # TODO: Assign bonds as well
-    rdmol = molecule.to_rdkit()
-    AssignStereochemistryFrom3D(rdmol, confId=0, replaceExistingTags=True)
+        if isinstance(molecule, _SimpleMolecule):
+            # SimpleMolecules do not store stereo info
+            return
 
-    for offatom, rdatom in zip(molecule.atoms, rdmol.GetAtoms()):
-        stereochemistry = None
-        if rdatom.HasProp("_CIPCode"):
-            stereo_code = rdatom.GetProp("_CIPCode")
-            if stereo_code == "R":
-                stereochemistry = "R"
-            elif stereo_code == "S":
-                stereochemistry = "S"
-            else:
-                raise UndefinedStereochemistryError(
-                    "In from_pdb: Expected atom stereochemistry of R or S. "
-                    f"Got {stereo_code} instead."
+        # TODO: Assign bonds as well
+        rdmol = molecule.to_rdkit()
+        AssignStereochemistryFrom3D(rdmol, confId=0, replaceExistingTags=True)
+
+        for offatom, rdatom in zip(molecule.atoms, rdmol.GetAtoms()):
+            stereochemistry = None
+            if rdatom.HasProp("_CIPCode"):
+                stereo_code = rdatom.GetProp("_CIPCode")
+                if stereo_code == "R":
+                    stereochemistry = "R"
+                elif stereo_code == "S":
+                    stereochemistry = "S"
+                else:
+                    raise UndefinedStereochemistryError(
+                        "In from_pdb: Expected atom stereochemistry of R or S. "
+                        f"Got {stereo_code} instead."
+                    )
+            offatom._stereochemistry = stereochemistry
+
+        for offbond, rdbond in zip(molecule.bonds, rdmol.GetBonds()):
+            stereochemistry = None
+            tag = rdbond.GetStereo()
+            if tag == BondStereo.STEREOZ:
+                stereochemistry = "Z"
+            elif tag == BondStereo.STEREOE:
+                stereochemistry = "E"
+            elif tag == BondStereo.STEREOTRANS or tag == BondStereo.STEREOCIS:
+                raise ValueError(
+                    f"Expected RDKit bond stereochemistry of E or Z, got {tag} instead"
                 )
-        offatom.stereochemistry = stereochemistry
+            offbond._stereochemistry = stereochemistry
+        inner(molecule)

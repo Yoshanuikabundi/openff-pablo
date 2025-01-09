@@ -7,7 +7,7 @@ import gzip
 from copy import deepcopy
 from io import StringIO
 from pathlib import Path
-from typing import Callable, Iterator, Mapping
+from typing import Callable, Iterator, Mapping, no_type_check
 from urllib.request import urlopen
 
 from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
@@ -216,85 +216,91 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         with urlopen(
             f"https://files.rcsb.org/ligands/download/{resname.upper()}.cif",
         ) as stream:
-            s = stream.read().decode("utf-8")
+            s: str = stream.read().decode("utf-8")
         path = self._path / f"{resname.upper()}.cif"
         path.write_text(s)
         return s
 
     @staticmethod
     def _res_def_from_ccd_str(s: str) -> ResidueDefinition:
-        # TODO: Handle residues like CL with a single atom properly (no tables)
-        data = []
-        with StringIO(s) as file:
-            PdbxReader(file).read(data)
-        block = data[0]
+        @no_type_check
+        def inner(s):
+            # TODO: Handle residues like CL with a single atom properly (no tables)
+            data = []
+            with StringIO(s) as file:
+                PdbxReader(file).read(data)
+            block = data[0]
 
-        parent_residue_name = (
-            block.getObj("chem_comp").getValue("mon_nstd_parent_comp_id").upper()
-        )
-        parent_residue_name = (
-            None if parent_residue_name == "?" else parent_residue_name
-        )
-        residueName = block.getObj("chem_comp").getValue("id").upper()
-        residue_description = block.getObj("chem_comp").getValue("name")
-        linking_type = block.getObj("chem_comp").getValue("type").upper()
-        linking_bond = LINKING_TYPES[linking_type]
-
-        atomData = block.getObj("chem_comp_atom")
-        atomNameCol = atomData.getAttributeIndex("atom_id")
-        altAtomNameCol = atomData.getAttributeIndex("alt_atom_id")
-        symbolCol = atomData.getAttributeIndex("type_symbol")
-        leavingCol = atomData.getAttributeIndex("pdbx_leaving_atom_flag")
-        chargeCol = atomData.getAttributeIndex("charge")
-        aromaticCol = atomData.getAttributeIndex("pdbx_aromatic_flag")
-        stereoCol = atomData.getAttributeIndex("pdbx_stereo_config")
-
-        atoms = [
-            AtomDefinition(
-                name=row[atomNameCol],
-                synonyms=tuple(
-                    [row[altAtomNameCol]]
-                    if row[altAtomNameCol] != row[atomNameCol]
-                    else []
-                ),
-                symbol=row[symbolCol][0:1].upper() + row[symbolCol][1:].lower(),
-                leaving=row[leavingCol] == "Y",
-                charge=int(row[chargeCol]),
-                aromatic=row[aromaticCol] == "Y",
-                stereo=None if row[stereoCol] == "N" else row[stereoCol],
+            parent_residue_name = (
+                block.getObj("chem_comp").getValue("mon_nstd_parent_comp_id").upper()
             )
-            for row in atomData.getRowList()
-        ]
+            parent_residue_name = (
+                None if parent_residue_name == "?" else parent_residue_name
+            )
+            residueName = block.getObj("chem_comp").getValue("id").upper()
+            residue_description = block.getObj("chem_comp").getValue("name")
+            linking_type = block.getObj("chem_comp").getValue("type").upper()
+            linking_bond = LINKING_TYPES[linking_type]
 
-        bondData = block.getObj("chem_comp_bond")
-        if bondData is not None:
-            atom1Col = bondData.getAttributeIndex("atom_id_1")
-            atom2Col = bondData.getAttributeIndex("atom_id_2")
-            orderCol = bondData.getAttributeIndex("value_order")
-            aromaticCol = bondData.getAttributeIndex("pdbx_aromatic_flag")
-            stereoCol = bondData.getAttributeIndex("pdbx_stereo_config")
-            bonds = [
-                BondDefinition(
-                    atom1=row[atom1Col],
-                    atom2=row[atom2Col],
-                    order={"SING": 1, "DOUB": 2, "TRIP": 3, "QUAD": 4}[row[orderCol]],
+            atomData = block.getObj("chem_comp_atom")
+            atomNameCol = atomData.getAttributeIndex("atom_id")
+            altAtomNameCol = atomData.getAttributeIndex("alt_atom_id")
+            symbolCol = atomData.getAttributeIndex("type_symbol")
+            leavingCol = atomData.getAttributeIndex("pdbx_leaving_atom_flag")
+            chargeCol = atomData.getAttributeIndex("charge")
+            aromaticCol = atomData.getAttributeIndex("pdbx_aromatic_flag")
+            stereoCol = atomData.getAttributeIndex("pdbx_stereo_config")
+
+            atoms = [
+                AtomDefinition(
+                    name=row[atomNameCol],
+                    synonyms=tuple(
+                        [row[altAtomNameCol]]
+                        if row[altAtomNameCol] != row[atomNameCol]
+                        else []
+                    ),
+                    symbol=row[symbolCol][0:1].upper() + row[symbolCol][1:].lower(),
+                    leaving=row[leavingCol] == "Y",
+                    charge=int(row[chargeCol]),
                     aromatic=row[aromaticCol] == "Y",
                     stereo=None if row[stereoCol] == "N" else row[stereoCol],
                 )
-                for row in bondData.getRowList()
+                for row in atomData.getRowList()
             ]
-        else:
-            bonds = []
 
-        return ResidueDefinition(
-            residue_name=residueName,
-            parent_residue_name=parent_residue_name,
-            description=residue_description,
-            linking_bond=linking_bond,
-            atoms=tuple(atoms),
-            bonds=tuple(bonds),
-            _skip_post_init_validation=True,
-        )
+            bondData = block.getObj("chem_comp_bond")
+            if bondData is not None:
+                atom1Col = bondData.getAttributeIndex("atom_id_1")
+                atom2Col = bondData.getAttributeIndex("atom_id_2")
+                orderCol = bondData.getAttributeIndex("value_order")
+                aromaticCol = bondData.getAttributeIndex("pdbx_aromatic_flag")
+                stereoCol = bondData.getAttributeIndex("pdbx_stereo_config")
+                bonds = [
+                    BondDefinition(
+                        atom1=row[atom1Col],
+                        atom2=row[atom2Col],
+                        order={"SING": 1, "DOUB": 2, "TRIP": 3, "QUAD": 4}[
+                            row[orderCol]
+                        ],
+                        aromatic=row[aromaticCol] == "Y",
+                        stereo=None if row[stereoCol] == "N" else row[stereoCol],
+                    )
+                    for row in bondData.getRowList()
+                ]
+            else:
+                bonds = []
+
+            return ResidueDefinition(
+                residue_name=residueName,
+                parent_residue_name=parent_residue_name,
+                description=residue_description,
+                linking_bond=linking_bond,
+                atoms=tuple(atoms),
+                bonds=tuple(bonds),
+                _skip_post_init_validation=True,
+            )
+
+        return inner(s)
 
     def __contains__(self, value: object) -> bool:
         if value in self._definitions:
@@ -385,7 +391,7 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
     residue definitions with this clashing problem into two definitions, one
     with the canonical IDs and the other with the alternates.
     """
-    clashes = []
+    clashes: list[int] = []
     canonical_names = {atom.name for atom in res.atoms}
     for i, atom in enumerate(res.atoms):
         for synonym in atom.synonyms:
@@ -438,7 +444,7 @@ def combine_patches(
     *patches: dict[str, Callable[[ResidueDefinition], list[ResidueDefinition]]],
 ) -> dict[str, Callable[[ResidueDefinition], list[ResidueDefinition]]]:
     """Combine multiple ``dict`` objects of patches into a single patchset"""
-    combined = {}
+    combined: dict[str, Callable[[ResidueDefinition], list[ResidueDefinition]]] = {}
     for patch in patches:
         for key, fn in patch.items():
             if key in combined:
