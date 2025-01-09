@@ -1,4 +1,4 @@
-name: pdbscan-docs
+name: pablo-docs
 channels:
   - conda-forge
 dependencies:

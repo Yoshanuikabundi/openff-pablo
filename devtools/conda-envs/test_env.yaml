@@ -1,4 +1,4 @@
-name: pdbscan-test
+name: pablo-test
 channels:
   - conda-forge
 dependencies:
@@ -6,8 +6,9 @@ dependencies:
   - pip
   - python>=3.11
 
-  # Runtime
-  - typer>=0.14
+  # Lints
+  - basedpyright
+  - ruff
 
   # Examples
   - jupyterlab>=4
@@ -31,16 +32,8 @@ dependencies:
   - openff-toolkit-base
   - rdkit
   - nglview>=3.0.6,<3.1.0
-  - pdbfixer
-  - mdtraj
-  - openmmtools
-  - mdanalysis
 
   # Data
-  - plotly
-  - matplotlib
-  - polars
-  - pandas
   - numpy
 
   #- pip:
