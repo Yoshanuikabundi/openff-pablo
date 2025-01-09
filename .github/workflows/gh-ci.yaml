@@ -75,7 +75,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -n 2 -v --cov=openff-pablo --cov-report=xml --color=yes openff/pablo/_tests/
+          pytest -n auto -v --color=yes
 
     # - name: codecov
     #   uses: codecov/codecov-action@v3
