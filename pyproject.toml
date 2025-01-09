@@ -1,0 +1,51 @@
+[build-system]
+requires = [
+  "setuptools >= 40.9.0",
+  "versioneer[toml]==0.26",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openff-pablo"
+description = "New, independent implementation of `Topology.from_pdb`"
+license = {file = "LICENSE" }
+authors = [
+    {name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org"},
+]
+maintainers = [
+    {name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org"},
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+]
+keywords = [
+    "molecular mechanics",
+]
+dynamic = [
+    "version",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6.0",
+    "pytest-xdist>=2.5",
+    "pytest-cov>=3.0",
+]
+doc = [
+    "sphinx",
+]
+
+# [project.urls]
+# source = "https://github.com/openforcefield/openff-pablo"
+# documentation = "https://openff-pablo.readthedocs.io"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "openff/pablo/_tests",
+]
+
+[tool.setuptools.packages.find]
+include = ["openff.*"]

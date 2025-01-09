@@ -1,0 +1,22 @@
+name: pablo-test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+    # Base depends
+  - python
+  - pip
+
+    # Testing
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - codecov
+
+  # chemistry
+  - openff-toolkit-base
+  - rdkit
+
+  #- pip:
+  #  - codecov
+
