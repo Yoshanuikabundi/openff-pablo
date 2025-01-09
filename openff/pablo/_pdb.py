@@ -88,7 +88,7 @@ def _load_unknown_residue(
 
 
 def topology_from_pdb(
-    path: PathLike[str],
+    path: PathLike[str] | str,
     unknown_molecules: Iterable[Molecule] = [],
     residue_database: Mapping[
         str,
@@ -284,7 +284,8 @@ def topology_from_pdb(
 
         prev_chain_id = data.chain_id[prototype_index]
         prev_model = data.model[prototype_index]
-    molecules.append(this_molecule)
+    if this_molecule.n_atoms != 0:
+        molecules.append(this_molecule)
 
     for offmol in molecules:
         offmol._invalidate_cached_properties()
