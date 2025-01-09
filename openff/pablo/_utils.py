@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Iterator
-from typing import TypeVar, TypeVarTuple, no_type_check
+from typing import TypeAlias, TypeVar, TypeVarTuple, no_type_check
 
 from openff.toolkit.topology._mm_molecule import _SimpleMolecule
 from openff.toolkit.topology.molecule import MoleculeLike
@@ -20,7 +20,7 @@ T = TypeVar("T")
 U = TypeVar("U")
 Ts = TypeVarTuple("Ts")
 
-type CIFValue = str | float | int
+CIFValue: TypeAlias = str | float | int
 
 
 class __UNSET__:
