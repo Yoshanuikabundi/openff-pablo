@@ -9,32 +9,32 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "openff-pablo"
 description = "New, independent implementation of `Topology.from_pdb`"
-license = {file = "LICENSE" }
+license = { file = "LICENSE" }
 authors = [
-    {name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org"},
+  { name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org" },
 ]
 maintainers = [
-    {name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org"},
+  { name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org" },
 ]
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
 ]
 keywords = [
-    "molecular mechanics",
+  "molecular mechanics",
 ]
 dynamic = [
-    "version",
+  "version",
 ]
 
 [project.optional-dependencies]
 test = [
-    "pytest>=6.0",
-    "pytest-xdist>=2.5",
-    "pytest-cov>=3.0",
+  "pytest>=6.0",
+  "pytest-xdist>=2.5",
+  "pytest-cov>=3.0",
 ]
 doc = [
-    "sphinx",
+  "sphinx",
 ]
 
 # [project.urls]
@@ -44,8 +44,27 @@ doc = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = [
-    "openff/pablo/_tests",
+  "openff/pablo/_tests",
 ]
 
 [tool.setuptools.packages.find]
 include = ["openff.*"]
+
+[tool.pyright]
+include = ["openff"]
+exclude = [".soap", "openff/pablo/_version.py", "docs", "examples"]
+typeCheckingMode = "strict"
+
+reportUnsupportedDunderAll = "error"
+reportUnknownVariableType = "warning"
+reportUnknownParameterType = "error"
+reportUnknownArgumentType = "warning"
+reportUnknownLambdaType = "warning"
+reportUnknownMemberType = "warning"
+reportAny = "information"
+reportMissingTypeStubs = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportPrivateUsage = "information"
+
+strictGenericNarrowing = true
