@@ -1,8 +1,10 @@
 import dataclasses
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cached_property
+from os import PathLike
+from pathlib import Path
 from typing import Any, Self
-from collections.abc import Iterable, Iterator, Mapping, Sequence
 
 from ._utils import __UNSET__, dec_hex, with_neighbours
 from .residue import AtomDefinition, ResidueDefinition
@@ -139,6 +141,10 @@ class PdbData:
     cryst1_alpha: float | None = None
     cryst1_beta: float | None = None
     cryst1_gamma: float | None = None
+
+    @classmethod
+    def from_file(cls, path: str | PathLike[str]) -> Self:
+        return cls.parse_pdb(Path(path).read_text().splitlines())
 
     def _append_coord_line(self, line: str):
         for field_ in dataclasses.fields(self):

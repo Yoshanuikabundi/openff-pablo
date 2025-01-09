@@ -1,13 +1,11 @@
 import itertools
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from os import PathLike
-from pathlib import Path
-from collections.abc import Iterable
+from typing import assert_never
 
 import numpy as np
 from openff.toolkit import Molecule, Topology
 from openff.units import elements, unit
-from typing import assert_never
 
 from ._pdb_data import PdbData, ResidueMatch
 from ._utils import (
@@ -205,8 +203,7 @@ def topology_from_pdb(
 
     """
     # TODO: support streams and gzipped files
-    path = Path(path)
-    data = PdbData.parse_pdb(path.read_text().splitlines())
+    data = PdbData.from_file(path)
 
     molecules: list[Molecule] = []
     this_molecule = Molecule()

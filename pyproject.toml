@@ -54,7 +54,11 @@ include = ["openff.*"]
 
 [tool.pyright]
 include = ["openff"]
-exclude = [".soap", "openff/pablo/_version.py", "docs", "examples"]
+exclude = [
+  ".soap",
+  "docs",
+  "examples",
+]
 typeCheckingMode = "strict"
 
 reportUnsupportedDunderAll = "error"
