@@ -241,7 +241,7 @@ html_theme = "openff_sphinx_theme"
 html_theme_options = {
     # Repository integration
     # Set the repo url for the link to appear
-    "repo_url": "https://github.com/openforcefield/openff-pablo",
+    "repo_url": "https://github.com/yoshanuikabundi/openff-pablo",
     # The name of the repo. If must be set if repo_url is set
     "repo_name": "openff-pablo",
     # Must be one of github, gitlab or bitbucket

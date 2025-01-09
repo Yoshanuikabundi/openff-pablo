@@ -109,3 +109,6 @@ ENV/
 
 # poetry
 poetry.lock
+
+# ruff
+.ruff_cache
