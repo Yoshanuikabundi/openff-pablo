@@ -2,11 +2,12 @@
 Classes for defining custom residues.
 """
 
+from collections.abc import Collection, Iterator, Mapping
+from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from functools import cached_property
 from typing import Literal, Self
-from collections.abc import Collection, Iterator, Mapping
 
 from openff.toolkit import Molecule
 from openff.units import elements, unit
@@ -16,6 +17,16 @@ __all__ = [
     "BondDefinition",
     "ResidueDefinition",
 ]
+
+_residue_definition_skip_validation = False
+
+
+@contextmanager
+def _defer_residue_definition_validation():  # type: ignore[deadcode]
+    global _residue_definition_skip_validation
+    _residue_definition_skip_validation = True
+    yield
+    _residue_definition_skip_validation = False
 
 
 @dataclass(frozen=True)
@@ -58,10 +69,9 @@ class ResidueDefinition:
     linking_bond: BondDefinition | None
     atoms: tuple[AtomDefinition, ...]
     bonds: tuple[BondDefinition, ...]
-    _skip_post_init_validation: InitVar[bool] = False
 
-    def __post_init__(self, _skip_post_init_validation: bool):
-        if _skip_post_init_validation:
+    def __post_init__(self):
+        if _residue_definition_skip_validation:
             return
 
         self._validate()
