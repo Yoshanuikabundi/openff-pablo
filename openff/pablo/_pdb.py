@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-def _load_unknown_residue(
+def _match_unknown_molecules(
     data: PdbData,
     indices: tuple[int, ...],
     unknown_molecules: Iterable[Molecule],
@@ -98,6 +98,7 @@ def topology_from_pdb(
     use_canonical_names: bool = False,
     ignore_unknown_CONECT_records: bool = False,
     set_stereochemistry: bool = True,
+    verbose_errors: bool = False,
 ) -> Topology:
     """
     Load a PDB file into an OpenFF ``Topology``.
@@ -217,13 +218,20 @@ def topology_from_pdb(
         # unique_molecules as appropriate
         chemical_data: Molecule | ResidueMatch
         if len(matches) == 0:
-            unknown_molecule = _load_unknown_residue(
+            unknown_molecule = _match_unknown_molecules(
                 data,
                 res_atom_idcs,
                 unknown_molecules,
             )
             if unknown_molecule is None:
-                raise NoMatchingResidueDefinitionError(res_atom_idcs, data)
+                raise NoMatchingResidueDefinitionError(
+                    res_atom_idcs,
+                    data,
+                    unknown_molecules,
+                    additional_substructures,
+                    residue_database,
+                    verbose_errors=verbose_errors,
+                )
             else:
                 chemical_data = unknown_molecule
         # If all matches would assign the same chemistry, accept it

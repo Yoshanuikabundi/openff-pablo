@@ -6,7 +6,7 @@ import dataclasses
 from copy import deepcopy
 from itertools import combinations
 
-from .._utils import unwrap
+from .._utils import flatten, unwrap
 from ..residue import (
     AtomDefinition,
     BondDefinition,
@@ -15,7 +15,8 @@ from ..residue import (
 from ._ccdcache import PEPTIDE_BOND
 
 __all__ = [
-    "PROTONATION_VARIANTS",
+    "ACIDIC_PROTONS",
+    "BASIC_ATOMS",
     "ATOM_NAME_SYNONYMS",
     "fix_caps",
     "add_protonation_variants",
@@ -24,7 +25,7 @@ __all__ = [
 ]
 
 
-PROTONATION_VARIANTS: dict[str, list[str]] = {
+ACIDIC_PROTONS: dict[str, list[str]] = {
     "ALA": ["HXT", "H2"],
     "ARG": ["HXT", "H2", "HH12"],
     "ASN": ["HXT", "H2"],
@@ -47,7 +48,7 @@ PROTONATION_VARIANTS: dict[str, list[str]] = {
     "TYR": ["HXT", "H2", "HH"],
     "VAL": ["HXT", "H2"],
 }
-"""Map from residue name to a list atom names of abstractable hydrogens.
+"""Map from residue name to a list of atom names of abstractable hydrogens.
 
 Each 3-tuple specifies an atom name to remove. This atom must have exactly one
 bond. A variant residue definition is created with that atom and bond removed,
@@ -55,6 +56,35 @@ and the formal charge of the bonded atom reduced by one.
 
 Note that all combinations of deprotonations are generated; this means a residue
 with ``n`` abstractable hydrogens will have ``2**n`` variants."""
+
+
+BASIC_ATOMS: dict[str, list[tuple[str, str]]] = {
+    "ALA": [("N", "H3")],
+    "ARG": [("N", "H3")],
+    "ASN": [("N", "H3")],
+    "ASP": [("N", "H3")],
+    "CYS": [("N", "H3")],
+    "GLN": [("N", "H3")],
+    "GLU": [("N", "H3")],
+    "GLY": [("N", "H3")],
+    "HIS": [("N", "H3")],
+    "ILE": [("N", "H3")],
+    "LEU": [("N", "H3")],
+    "LYS": [("N", "H3")],
+    "MET": [("N", "H3")],
+    "PHE": [("N", "H3")],
+    "PRO": [],
+    "SER": [("N", "H3")],
+    "THR": [("N", "H3")],
+    "TRP": [("N", "H3")],
+    "TYR": [("N", "H3")],
+    "VAL": [("N", "H3")],
+}
+"""Protonation variants that add an atom to the CCD.
+
+Each 3-tuple specifies an atom name to protonate and the name of the added
+proton. A variant residue definition is created with that atom and bond added,
+and the formal charge of the atom increased by one."""
 
 ATOM_NAME_SYNONYMS = {
     "NME": {"HN2": ["H"]},
@@ -85,9 +115,25 @@ def fix_caps(res: ResidueDefinition) -> list[ResidueDefinition]:
 
 
 def add_protonation_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
-    """Add protonation variants from the PROTONATION_VARIANTS constant"""
+    """
+    Add protonation variants from the ACIDIC_PROTONS and BASIC_ATOMS constants
+
+    Note that all combinations of protonations and deprotonations are generated;
+    this means a residue with ``n`` abstractable hydrogens and ``m`` acidic atoms
+    will have ``2**(n+m)`` variants.
+    """
+    return list(
+        flatten(
+            add_protonated_variants(deprotonated_variant)
+            for deprotonated_variant in add_deprotonated_variants(res)
+        ),
+    )
+
+
+def add_deprotonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
+    """Add protonation variants from the ACIDIC_PROTONS constant"""
     deprotonations: list[tuple[str, str]] = []
-    for hydrogen in PROTONATION_VARIANTS.get(res.residue_name, []):
+    for hydrogen in ACIDIC_PROTONS.get(res.residue_name, []):
         bonded_atoms: list[str] = []
         for bond in res.bonds:
             if bond.atom1 == hydrogen:
@@ -123,6 +169,47 @@ def add_protonation_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
                     atoms.append(atom)
 
             variants.append(dataclasses.replace(res, atoms=atoms, bonds=bonds))
+
+    return variants
+
+
+def add_protonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
+    """Add protonation variants from the BASIC_ATOMS constant"""
+    protonations = BASIC_ATOMS.get(res.residue_name, [])
+
+    variants: list[ResidueDefinition] = [res]
+    for i in range(len(protonations)):
+        for combination in combinations(protonations, i + 1):
+            for heavy_atom, hydrogen in combination:
+                bonds = [
+                    *res.bonds,
+                    BondDefinition(
+                        heavy_atom,
+                        hydrogen,
+                        order=1,
+                        aromatic=False,
+                        stereo=None,
+                    ),
+                ]
+
+                atoms: list[AtomDefinition] = [
+                    AtomDefinition(
+                        name=hydrogen,
+                        synonyms=(),
+                        symbol="H",
+                        leaving=False,
+                        charge=0,
+                        aromatic=False,
+                        stereo=None,
+                    ),
+                ]
+                for atom in res.atoms:
+                    if atom.name == heavy_atom:
+                        atoms.append(dataclasses.replace(atom, charge=atom.charge + 1))
+                    else:
+                        atoms.append(atom)
+
+                variants.append(dataclasses.replace(res, atoms=atoms, bonds=bonds))
 
     return variants
 
