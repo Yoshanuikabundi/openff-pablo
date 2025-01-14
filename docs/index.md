@@ -21,6 +21,7 @@ hidden: true
 ---
 
 Overview <self>
+tests.md
 :::
 
 <!--
