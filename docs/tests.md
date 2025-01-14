@@ -13,6 +13,8 @@ Pablo has a (developing) PDB test suite.
     - Coverage <input type="text" id="pdb-filter-1" onkeyup="filterTable(1)" placeholder="Filter..." style="display: block; width: 8rem">
 *   - 5ap1_prepared.pdb
     - ACE/NME caps, `unique_molecules`
+*   - 193L_prepared.pdb
+    - Baseline protein, disulfides
 :::
 
 <script>
