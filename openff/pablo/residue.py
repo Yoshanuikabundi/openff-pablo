@@ -2,6 +2,7 @@
 Classes for defining custom residues.
 """
 
+import dataclasses
 from collections.abc import Collection, Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
@@ -55,6 +56,15 @@ class BondDefinition:
     order: int
     aromatic: bool
     stereo: Literal["E", "Z"] | None
+
+    def flipped(self) -> Self:
+        """The same bond, but with the atoms in the opposite order"""
+        return dataclasses.replace(self, atom1=self.atom2, atom2=self.atom1)
+
+    def sorted(self) -> Self:
+        """The same bond, but with the atoms in sorted order"""
+        sorted_atoms = sorted([self.atom1, self.atom2])
+        return dataclasses.replace(self, atom1=sorted_atoms[0], atom2=sorted_atoms[1])
 
 
 @dataclass(frozen=True)
