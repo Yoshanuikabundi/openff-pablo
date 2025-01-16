@@ -2,6 +2,7 @@
 Classes for defining custom residues.
 """
 
+import dataclasses
 from collections.abc import Collection, Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
@@ -36,12 +37,19 @@ class AtomDefinition:
     """
 
     name: str
+    """The canonical name of this atom"""
     synonyms: tuple[str, ...]
+    """Other names this atom can have"""
     symbol: str
+    """The elemental symbol for this atom"""
     leaving: bool
+    """Whether this atom is absent when some bond is formed between this residue and another"""
     charge: int
+    """The formal charge of this atom"""
     aromatic: bool
+    """Whether this atom is aromatic"""
     stereo: Literal["S", "R"] | None
+    """The chirality of this atom"""
 
 
 @dataclass(frozen=True)
@@ -51,10 +59,24 @@ class BondDefinition:
     """
 
     atom1: str
+    """The canonical name of the first atom in this bond"""
     atom2: str
+    """The canonical name of the second atom in this bond"""
     order: int
+    """The bond order of this bond (1 for single bond, 2 for double bond, etc.)"""
     aromatic: bool
+    """``True`` if this bond is aromatic, ``False`` otherwise"""
     stereo: Literal["E", "Z"] | None
+    """The stereochemistry of this bond."""
+
+    def flipped(self) -> Self:
+        """The same bond, but with the atoms in the opposite order"""
+        return dataclasses.replace(self, atom1=self.atom2, atom2=self.atom1)
+
+    def sorted(self) -> Self:
+        """The same bond, but with the atoms in sorted order"""
+        sorted_atoms = sorted([self.atom1, self.atom2])
+        return dataclasses.replace(self, atom1=sorted_atoms[0], atom2=sorted_atoms[1])
 
 
 @dataclass(frozen=True)
@@ -64,11 +86,71 @@ class ResidueDefinition:
     """
 
     residue_name: str
-    parent_residue_name: str | None
+    """The 3-letter residue code used in PDB files"""
     description: str
+    """A longer description of the residue"""
     linking_bond: BondDefinition | None
+    """Description of how this residue may bond to its neighbours in a polymer
+
+    If the residue is only found as a monomer, ``None``. Otherwise, a
+    :py:cls:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
+    canonical atom names of the atoms that form the linking bond. ``atom1`` is
+    the name of the atom in the residue preceding the bond, and ``atom2`` is in
+    the residue after the bond. Any atoms that the bond between residues
+    replaces should be marked as ``atom.leaving=True``.
+
+    A linking bond will be formed to join two residues if and only if all of the
+    below are true:
+
+    - The residues' atom records are sequential in the PDB file
+    - The residues have the same chain ID
+    - There is no TER record between the residues in the PDB file
+    - The two residues have identical ``linking_bond`` attributes
+    - All leaving atoms associated with ``linking_bond.atom1`` are absent in
+    the first encountered residue, and all leaving atoms associated with
+    ``linking_bond.atom2`` are absent in the latter residue. Leaving atoms
+    are those that have the ``AtomDefinition.leaving`` attribute set to
+    ``True``. A leaving atom is associated with atom `a` if it is bonded to
+    `a`, or it is bonded to an atom associated with `a`.
+    - There is at least one leaving atom associated with each linking atom
+
+    The charge of linking atoms is not modified; any change in valence is
+    accounted for via the removal of leaving atoms.
+    """
+    crosslink: BondDefinition | None
+    """Optional description of a crosslink between this residue and another.
+
+    A crosslink is a bond between this residue and another. Crosslinks differ
+    from linking bonds primarily because they may occur between residues that
+    are do not appear sequentially in the PDB file. Crosslinks cannot occur
+    within a residue; use a bond or residue variant instead.
+
+    If the residue does not form cross links, ``None``. Otherwise, a
+    :py:cls:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
+    canonical atom names of the atoms that form the crosslink. ``atom1`` is
+    the name of the atom in this residue, and ``atom2`` is in the other residue.
+    Any atoms that the bond between residues replaces should be marked as
+    ``atom.leaving=True``.
+
+    A crosslink will be formed between two residues if and only if all of the
+    below are true:
+
+    - The two residues' ``crosslink`` attributes are identical except that their
+    atom names are reversed
+    - All leaving atoms associated with each residues' ``crosslink.atom1``
+    attribute are absent in that residue. Leaving atoms are those that have the
+    ``AtomDefinition.leaving`` attribute set to ``True``. A leaving atom is
+    associated with atom `a` if it is bonded to `a`, or it is bonded to an atom
+    associated with `a`.
+    - There is at least one leaving atom associated with each cross-linking atom
+
+    The charge of linking atoms is not modified; any change in valence is
+    accounted for via the removal of leaving atoms.
+    """
     atoms: tuple[AtomDefinition, ...]
+    """The atom definitions that make up this residue"""
     bonds: tuple[BondDefinition, ...]
+    """The bond definitions that make up this residue"""
 
     def __post_init__(self):
         if _residue_definition_skip_validation:
@@ -77,9 +159,13 @@ class ResidueDefinition:
         self._validate()
 
     def _validate(self):
-        if self.linking_bond is None and True in {atom.leaving for atom in self.atoms}:
+        if (
+            self.linking_bond is None
+            and self.crosslink is None
+            and True in {atom.leaving for atom in self.atoms}
+        ):
             raise ValueError(
-                f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond",
+                f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond or crosslink",
                 self,
             )
         if len({atom.name for atom in self.atoms}) != len(self.atoms):
@@ -88,8 +174,10 @@ class ResidueDefinition:
             )
 
         all_leaving_atoms = {atom.name for atom in self.atoms if atom.leaving}
-        assigned_leaving_atoms = self.prior_bond_leaving_atoms.union(
-            self.posterior_bond_leaving_atoms,
+        assigned_leaving_atoms = (
+            self.prior_bond_leaving_atoms
+            | self.posterior_bond_leaving_atoms
+            | self.crosslink_leaving_atoms
         )
         unassigned_leaving_atoms = all_leaving_atoms.difference(assigned_leaving_atoms)
         if len(unassigned_leaving_atoms) != 0:
@@ -103,8 +191,8 @@ class ResidueDefinition:
         name: str,
         molecule: Molecule,
         linking_bond: BondDefinition | None = None,
+        crosslink: BondDefinition | None = None,
         description: str = "",
-        parent_residue_name: str | None = None,
     ) -> Self:
         atoms: list[AtomDefinition] = []
         for atom in molecule.atoms:
@@ -133,9 +221,9 @@ class ResidueDefinition:
 
         return cls(
             residue_name=name,
-            parent_residue_name=parent_residue_name,
             description=description,
             linking_bond=linking_bond,
+            crosslink=crosslink,
             atoms=tuple(atoms),
             bonds=tuple(bonds),
         )
@@ -147,6 +235,7 @@ class ResidueDefinition:
         molecule: Molecule,
         leaving_atom_indices: Collection[int],
         linking_bond: BondDefinition,
+        crosslink: BondDefinition | None = None,
         description: str = "",
     ) -> Self:
         molecule = deepcopy(molecule)
@@ -156,6 +245,7 @@ class ResidueDefinition:
             name=name,
             molecule=molecule,
             linking_bond=linking_bond,
+            crosslink=crosslink,
             description=description,
         )
 
@@ -167,6 +257,7 @@ class ResidueDefinition:
         atom_names: Mapping[int, str],
         leaving_atoms: Collection[int] = (),
         linking_bond: BondDefinition | None = None,
+        crosslink: BondDefinition | None = None,
         description: str = "",
     ) -> Self:
         molecule = Molecule.from_mapped_smiles(mapped_smiles)
@@ -181,6 +272,7 @@ class ResidueDefinition:
             molecule=molecule,
             linking_bond=linking_bond,
             description=description,
+            crosslink=crosslink,
         )
 
     def to_openff_molecule(self) -> Molecule:
@@ -273,6 +365,14 @@ class ResidueDefinition:
             set()
             if self.linking_bond is None
             else set(self._leaving_fragment_of(self.prior_bond_linking_atom))
+        )
+
+    @cached_property
+    def crosslink_leaving_atoms(self) -> set[str]:
+        return (
+            set()
+            if self.crosslink is None
+            else set(self._leaving_fragment_of(self.crosslink.atom1))
         )
 
     @property

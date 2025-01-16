@@ -5,25 +5,59 @@ Exceptions for the PDB loader.
 __all__ = [
     "NoMatchingResidueDefinitionError",
     "MultipleMatchingResidueDefinitionsError",
+    "UnknownOrAmbiguousSerialInConectError",
 ]
 
 
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING
-from collections.abc import Sequence
+
+from openff.toolkit import Molecule
 
 if TYPE_CHECKING:
     from openff.pablo._pdb_data import PdbData, ResidueMatch
+    from openff.pablo.residue import ResidueDefinition
 
 
 class NoMatchingResidueDefinitionError(ValueError):
     """Exception raised when a residue is missing from the database"""
 
-    def __init__(self, res_atom_idcs: Sequence[int], data: "PdbData"):
+    def __init__(
+        self,
+        res_atom_idcs: Sequence[int],
+        data: "PdbData",
+        unknown_molecules: Iterable[Molecule],
+        additional_substructures: Iterable["ResidueDefinition"],
+        residue_database: Mapping[
+            str,
+            Iterable["ResidueDefinition"],
+        ],
+        verbose_errors: bool = False,
+    ):
         i = res_atom_idcs[0]
-        super().__init__(
-            "No residue definitions covered all atoms in residue"
-            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}",
-        )
+        res_name = data.res_name[i]
+
+        msg = [
+            (
+                "No residue definitions covered all atoms in residue"
+                + f"{data.chain_id[i]}:{res_name}#{data.res_seq[i]}"
+            ),
+        ]
+        if verbose_errors:
+            residue_definitions = list(residue_database[res_name])
+            if len(residue_definitions) == 0:
+                msg.append("  No residues in database for residue name {res_name}")
+            found_names = [data.name[i] for i in res_atom_idcs]
+            for resdef in residue_definitions:
+                resdef_names = [
+                    "|".join([atom.name, *atom.synonyms]) for atom in resdef.atoms
+                ]
+                msg.append(f"    In {resdef.description}:")
+                msg.append(f"      Expected {sorted(resdef_names)}")
+                msg.append(f"      Found {sorted(found_names)}")
+            # TODO: Describe residue_database and additional_substructures too
+
+        super().__init__("\n".join(msg))
 
 
 class MultipleMatchingResidueDefinitionsError(ValueError):
@@ -32,9 +66,39 @@ class MultipleMatchingResidueDefinitionsError(ValueError):
         matches: Sequence["ResidueMatch"],
         res_atom_idcs: tuple[int, ...],
         data: "PdbData",
+        verbose_errors: bool,
     ):
         i = res_atom_idcs[0]
-        super().__init__(
+
+        msg = (
             f"{len(matches)} residue definitions matched residue "
-            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}",
+            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}"
         )
+
+        if verbose_errors:
+            msg += ":"
+            msg = "\n    ".join(
+                [
+                    msg,
+                    *map(
+                        lambda m: m.residue_definition.description
+                        + f" {m.expect_crosslink=} {m.expect_prior_bond=} {m.expect_posterior_bond=}",
+                        matches,
+                    ),
+                ],
+            )
+
+        super().__init__(msg)
+
+
+class UnknownOrAmbiguousSerialInConectError(ValueError):
+    def __init__(self, serial: int, possible_indices: Collection[int]):
+        self.serial = serial
+        self.possible_indices = possible_indices
+        msg = f"Atom serial {serial} was found in a CONECT record, "
+        if len(possible_indices) == 0:
+            msg += "but no corresponding ATOM/HETATM record was found"
+        else:
+            msg += "but multiple corresponding ATOM/HETATM records were found "
+            msg += f"(records {','.join(map(str, possible_indices))})"
+        super().__init__(msg)

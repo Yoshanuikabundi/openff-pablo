@@ -2,13 +2,13 @@ OpenFF Pablo
 ==============================
 [//]: # (Badges)
 
-| **Latest release** | [![Last release tag](https://img.shields.io/github/release-pre/yoshanuikabundi/openff-pablo.svg)](https://github.com/openforcefield/openff-pablo/releases) ![GitHub commits since latest release (by date) for a branch](https://img.shields.io/github/commits-since/openforcefield/openff-pablo/latest)  [![Documentation Status](https://readthedocs.org/projects/openff-pablo/badge/?version=latest)](https://openff-pablo.readthedocs.io/en/latest/?badge=latest)                                                                                                                                                                                                                        |
+| **Latest release** | [![Last release tag](https://img.shields.io/github/release-pre/openforcefield/openff-pablo.svg)](https://github.com/openforcefield/openff-pablo/releases) ![GitHub commits since latest release (by date) for a branch](https://img.shields.io/github/commits-since/openforcefield/openff-pablo/latest)  [![Documentation Status](https://readthedocs.org/projects/openff-pablo/badge/?version=latest)](https://openff-pablo.readthedocs.io/en/latest/?badge=latest)                                                                                                                                                                                                                        |
 | :----------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | [![GH Actions Status](https://github.com/yoshanuikabundi/openff-pablo/actions/workflows/gh-ci.yaml/badge.svg)](https://github.com/openforcefield/openff-pablo/actions?query=branch%3Amain+workflow%3Agh-ci) |
+| **Status**         | [![GH Actions Status](https://github.com/openforcefield/openff-pablo/actions/workflows/gh-ci.yaml/badge.svg)](https://github.com/openforcefield/openff-pablo/actions?query=branch%3Amain+workflow%3Agh-ci) |
 
 New, independent implementation of `Topology.from_pdb`
 
-OpenFF Pablo is bound by a [Code of Conduct](https://github.com/yoshanuikabundi/openff-pablo/blob/main/CODE_OF_CONDUCT.md).
+OpenFF Pablo is bound by a [Code of Conduct](https://github.com/openforcefield/openff-pablo/blob/main/CODE_OF_CONDUCT.md).
 
 ### Installation
 
@@ -72,8 +72,8 @@ pip install -e ".[test,doc]"
 
 ### Copyright
 
-The OpenFF Pablo source code is hosted at https://github.com/yoshanuikabundi/openff-pablo
-and is available under the GNU General Public License, version 3 (see the file [LICENSE](https://github.com/yoshanuikabundi/openff-pablo/blob/main/LICENSE)).
+The OpenFF Pablo source code is hosted at https://github.com/openforcefield/openff-pablo
+and is available under the GNU General Public License, version 3 (see the file [LICENSE](https://github.com/openforcefield/openff-pablo/blob/main/LICENSE)).
 
 Copyright (c) 2025, Josh Mitchell
 

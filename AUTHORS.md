@@ -4,7 +4,7 @@ OpenFF Pablo was created by Josh Mitchell in 2025.
 
 
 All contributing authors are listed in this file below.
-The repository history at https://github.com/yoshanuikabundi/openff-pablo
+The repository history at https://github.com/openforcefield/openff-pablo
 and the CHANGELOG show individual code contributions.
 
 ## Chronological list of authors

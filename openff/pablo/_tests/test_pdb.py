@@ -13,6 +13,10 @@ from openff.pablo._utils import sort_tuple
             "data/5ap1_prepared.pdb",
             ["O=C([O-])Cn1cc(cn1)c2ccc(cc2OCC#N)Nc3ccc(c(n3)NC4CCCCC4)C#N"],
         ),
+        (
+            "data/193l_prepared.pdb",
+            [],
+        ),
     ],
 )
 def test_connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
@@ -25,6 +29,7 @@ def test_connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches
     pablo_top = topology_from_pdb(
         filename,
         unknown_molecules=unknown_molecules,
+        verbose_errors=True,
     )
     legacy_top: Topology = Topology.from_pdb(
         filename,

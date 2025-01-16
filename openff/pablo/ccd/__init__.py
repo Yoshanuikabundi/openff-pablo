@@ -11,6 +11,7 @@ from pathlib import Path
 from . import patches
 from ._ccdcache import CcdCache
 from .patches import (
+    add_disulfide_crosslink,
     add_protonation_variants,
     add_synonyms,
     disambiguate_alt_ids,
@@ -31,6 +32,7 @@ CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
         {
             "ACE": fix_caps,
             "NME": fix_caps,
+            "CYS": add_disulfide_crosslink,
         },
         {"*": add_protonation_variants},
         {"*": disambiguate_alt_ids},

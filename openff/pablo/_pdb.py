@@ -1,5 +1,5 @@
 import itertools
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, MutableSequence
 from os import PathLike
 from typing import assert_never
 
@@ -25,16 +25,16 @@ __all__ = [
 ]
 
 
-def _load_unknown_residue(
+def _match_unknown_molecules(
     data: PdbData,
     indices: tuple[int, ...],
     unknown_molecules: Iterable[Molecule],
 ) -> Molecule | None:
     conects: set[tuple[int, int]] = set()
-    serial_to_mol_index: dict[int, int] = {}
+    pdb_idx_to_mol_idx: dict[int, int] = {}
     pdbmol = Molecule()
     for pdb_index in indices:
-        serial_to_mol_index[data.serial[pdb_index]] = pdbmol.add_atom(
+        pdb_idx_to_mol_idx[pdb_index] = pdbmol.add_atom(
             atomic_number=elements.NUMBERS[data.element[pdb_index]],
             formal_charge=data.charge[pdb_index],
             is_aromatic=False,
@@ -51,16 +51,24 @@ def _load_unknown_residue(
                 "atom_serial": data.serial[pdb_index],
             },
         )
-        for conect_serial in data.conects[pdb_index]:
-            conects.add(sort_tuple((data.serial[pdb_index], conect_serial)))
+        for conect_idx in data.conects[pdb_index]:
+            conects.add(sort_tuple((pdb_index, conect_idx)))
 
-    for serial1, serial2 in conects:
-        pdbmol.add_bond(
-            atom1=serial_to_mol_index[serial1],
-            atom2=serial_to_mol_index[serial2],
-            bond_order=1,
-            is_aromatic=False,
-        )
+    for a, b in conects:
+        try:
+            pdbmol.add_bond(
+                atom1=pdb_idx_to_mol_idx[a],
+                atom2=pdb_idx_to_mol_idx[b],
+                bond_order=1,
+                is_aromatic=False,
+            )
+        except KeyError:
+            a_summary = f"{data.name[a]}#{data.serial[a]}@{data.chain_id[a]}:{data.res_name[a]}#{data.res_seq[a]}"
+            b_summary = f"{data.name[b]}#{data.serial[a]}@{data.chain_id[b]}:{data.res_name[b]}#{data.res_seq[b]}"
+            raise ValueError(
+                "Cannot match unknown molecule that spans multiple residues: "
+                + f"Found CONECT record between {a_summary} and {b_summary}",
+            )
 
     for molecule in unknown_molecules:
         (match_found, mapping) = Molecule.are_isomorphic(
@@ -81,6 +89,7 @@ def _load_unknown_residue(
                 atom.metadata.update(pdbatom.metadata)
                 atom.name = pdbatom.name
             molecule.generate_conformers(n_conformers=0, clear_existing=True)
+            molecule.properties["pdb_idx_to_mol_atom_idx"] = pdb_idx_to_mol_idx
 
             return molecule
     else:
@@ -97,7 +106,8 @@ def topology_from_pdb(
     additional_substructures: Iterable[ResidueDefinition] = [],
     use_canonical_names: bool = False,
     ignore_unknown_CONECT_records: bool = False,
-    set_stereochemistry: bool = True,
+    set_stereochemistry_from_3d: bool = True,
+    verbose_errors: bool = False,
 ) -> Topology:
     """
     Load a PDB file into an OpenFF ``Topology``.
@@ -149,10 +159,10 @@ def topology_from_pdb(
         through the residue database and unknown molecules. By default, any
         CONECT records not reflected in the final topology raise an error.
         If this argument is ``True``, this error is suppressed.
-    set_stereochemistry
+    set_stereochemistry_from_3d
         If ``True``, stereochemistry will be set according to the structure of
         the PDB file. This takes considerable time. If ``False``, leave stereo
-        unset.
+        as set in the ``ResidueDefinition``.
 
     Notes
     -----
@@ -205,8 +215,8 @@ def topology_from_pdb(
     # TODO: support streams and gzipped files
     data = PdbData.from_file(path)
 
-    molecules: list[Molecule] = []
     this_molecule = Molecule()
+    molecules: list[Molecule] = [this_molecule]
     prev_chain_id = data.chain_id[0]
     prev_model = data.model[0]
     for res_atom_idcs, matches in zip(
@@ -217,13 +227,20 @@ def topology_from_pdb(
         # unique_molecules as appropriate
         chemical_data: Molecule | ResidueMatch
         if len(matches) == 0:
-            unknown_molecule = _load_unknown_residue(
+            unknown_molecule = _match_unknown_molecules(
                 data,
                 res_atom_idcs,
                 unknown_molecules,
             )
             if unknown_molecule is None:
-                raise NoMatchingResidueDefinitionError(res_atom_idcs, data)
+                raise NoMatchingResidueDefinitionError(
+                    res_atom_idcs,
+                    data,
+                    unknown_molecules,
+                    additional_substructures,
+                    residue_database,
+                    verbose_errors=verbose_errors,
+                )
             else:
                 chemical_data = unknown_molecule
         # If all matches would assign the same chemistry, accept it
@@ -234,7 +251,12 @@ def topology_from_pdb(
             # this is a debug assert, if it triggers there's a bug
             assert set(res_atom_idcs) == chemical_data.res_atom_idcs
         else:
-            raise MultipleMatchingResidueDefinitionsError(matches, res_atom_idcs, data)
+            raise MultipleMatchingResidueDefinitionsError(
+                matches,
+                res_atom_idcs,
+                data,
+                verbose_errors=verbose_errors,
+            )
 
         prototype_index = res_atom_idcs[0]
 
@@ -247,16 +269,20 @@ def topology_from_pdb(
                 isinstance(chemical_data, ResidueMatch)
                 and not chemical_data.expect_prior_bond
             )
-            or (isinstance(chemical_data, Molecule))
         ):
-            molecules.append(this_molecule)
             this_molecule = Molecule()
+            molecules.append(this_molecule)
 
         # Apply the chemical data we've collected
         if isinstance(chemical_data, Molecule):
             this_molecule = chemical_data
+            if molecules[-1].n_atoms == 0:
+                molecules[-1] = this_molecule
+            else:
+                molecules.append(this_molecule)
         elif isinstance(chemical_data, ResidueMatch):
-            add_to_molecule(
+            this_molecule = add_to_molecule(
+                molecules,
                 this_molecule,
                 res_atom_idcs,
                 chemical_data,
@@ -275,8 +301,8 @@ def topology_from_pdb(
                 and not chemical_data.expect_posterior_bond
             )
         ):
-            molecules.append(this_molecule)
             this_molecule = Molecule()
+            molecules.append(this_molecule)
 
         # TODO: Load other data from PDB file
         # TODO: Incorporate CONECT records
@@ -284,17 +310,15 @@ def topology_from_pdb(
 
         prev_chain_id = data.chain_id[prototype_index]
         prev_model = data.model[prototype_index]
-    if this_molecule.n_atoms != 0:
-        molecules.append(this_molecule)
 
     for offmol in molecules:
         offmol._invalidate_cached_properties()
         offmol.add_default_hierarchy_schemes()
 
-    topology = Topology.from_molecules(molecules)
+    topology = Topology.from_molecules(filter(lambda m: m.n_atoms != 0, molecules))
     topology.set_positions(np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom)  # type: ignore
 
-    if set_stereochemistry:
+    if set_stereochemistry_from_3d:
         for molecule in topology.molecules:
             # TODO: Speed this up
             #   - Build up molecules in RDMol form to skip conversion step?
@@ -311,18 +335,14 @@ def topology_from_pdb(
 
 def check_all_conects(topology: Topology, data: PdbData):
     all_bonds: set[tuple[int, int]] = {
-        tuple(
-            sorted([topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)]),
-        )
+        sort_tuple((topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)))
         for bond in topology.bonds
-    }  # type:ignore[assignment]
-    index_of = {serial: i for i, serial in enumerate(data.serial)}
+    }
 
     conect_bonds: set[tuple[int, int]] = set()
-    for i_idx, js in enumerate(data.conects):
+    for i, js in enumerate(data.conects):
         for j in js:
-            j_idx = index_of[j]
-            conect_bonds.add((i_idx, j_idx) if i_idx < j_idx else (j_idx, i_idx))
+            conect_bonds.add(sort_tuple((i, j)))
     if not conect_bonds.issubset(all_bonds):
         raise ValueError(
             "CONECT records without chemical information not supported",
@@ -353,12 +373,13 @@ def set_box_vectors(topology: Topology, data: PdbData):
 
 
 def add_to_molecule(
+    molecules: MutableSequence[Molecule],
     this_molecule: Molecule,
     res_atom_idcs: tuple[int, ...],
     residue_match: ResidueMatch,
     data: PdbData,
     use_canonical_names: bool,
-) -> None:
+) -> Molecule:
     # Identify the previous linking atom
     linking_atom_idx: None | int = None
     if residue_match.expect_prior_bond:
@@ -374,6 +395,10 @@ def add_to_molecule(
 
     # Add the residue to the current molecule
     atom_name_to_mol_idx: dict[str, int] = {}
+    pdb_idx_to_mol_idx: dict[int, int] = this_molecule.properties.setdefault(
+        "pdb_idx_to_mol_atom_idx",
+        {},
+    )
     for pdb_index in res_atom_idcs:
         atom_def = residue_match.atom(pdb_index)
 
@@ -381,7 +406,7 @@ def add_to_molecule(
             # TODO: Support altlocs (probably in PdbData, maybe PdbData.residues()?)
             raise ValueError("altloc not yet supported")
 
-        atom_name_to_mol_idx[atom_def.name] = this_molecule._add_atom(
+        mol_atom_idx = this_molecule._add_atom(
             atomic_number=elements.NUMBERS[atom_def.symbol],
             formal_charge=atom_def.charge,
             is_aromatic=atom_def.aromatic,
@@ -403,6 +428,8 @@ def add_to_molecule(
             },
             invalidate_cache=False,
         )
+        atom_name_to_mol_idx[atom_def.name] = mol_atom_idx
+        pdb_idx_to_mol_idx[pdb_index] = mol_atom_idx
 
     for bond in residue_match.residue_definition.bonds:
         if bond.atom1 in atom_name_to_mol_idx and bond.atom2 in atom_name_to_mol_idx:
@@ -411,7 +438,7 @@ def add_to_molecule(
                 atom2=atom_name_to_mol_idx[bond.atom2],
                 bond_order=bond.order,
                 is_aromatic=bond.aromatic,
-                stereochemistry=None,
+                stereochemistry=bond.stereo,
                 invalidate_cache=False,
             )
 
@@ -425,6 +452,76 @@ def add_to_molecule(
             atom2=atom_name_to_mol_idx[linking_bond.atom2],
             bond_order=linking_bond.order,
             is_aromatic=linking_bond.aromatic,
-            stereochemistry=None,
+            stereochemistry=linking_bond.stereo,
             invalidate_cache=False,
         )
+
+    if residue_match.crosslink is not None:
+        this_idx, other_idx = residue_match.crosslink
+        crosslink_bond = residue_match.residue_definition.crosslink
+        assert crosslink_bond is not None, "Crosslink cannot be None if in match"
+        if other_idx > this_idx:
+            # If this residue is the first residue of the crosslink to be added,
+            # skip it and wait for the other residue to be read.
+            return this_molecule
+
+        if other_idx in pdb_idx_to_mol_idx:
+            this_molecule._add_bond(
+                atom1=pdb_idx_to_mol_idx[this_idx],
+                atom2=pdb_idx_to_mol_idx[other_idx],
+                bond_order=crosslink_bond.order,
+                is_aromatic=crosslink_bond.aromatic,
+                stereochemistry=crosslink_bond.stereo,
+                invalidate_cache=False,
+            )
+            return this_molecule
+
+        for other_molecule in molecules:
+            other_mol_pdb_idx_to_mol_atom_idx = other_molecule.properties[
+                "pdb_idx_to_mol_atom_idx"
+            ]
+            assert isinstance(
+                dict,
+                other_mol_pdb_idx_to_mol_atom_idx,
+            ), "This property should have already been set by Pablo"
+
+            if other_idx in other_mol_pdb_idx_to_mol_atom_idx:
+                # Forming a crosslink to a previously terminated molecule
+                # Transfer all atoms from this molecule into the other
+                old_to_new: dict[int, int] = {}
+                for old_idx, atom in enumerate(this_molecule.atoms):
+                    old_to_new[old_idx] = other_molecule._add_atom(
+                        atomic_number=atom.atomic_number,
+                        formal_charge=atom.formal_charge.m,
+                        is_aromatic=atom.is_aromatic,
+                        stereochemistry=atom.stereochemistry,
+                        name=atom.name,
+                        metadata=dict(atom.metadata),
+                        invalidate_cache=False,
+                    )
+                for bond in this_molecule.bonds:
+                    other_molecule._add_bond(
+                        atom1=old_to_new[bond.atom1_index],
+                        atom2=old_to_new[bond.atom2_index],
+                        bond_order=bond.bond_order,
+                        is_aromatic=bond.is_aromatic,
+                        stereochemistry=bond.stereochemistry,
+                        invalidate_cache=False,
+                    )
+                other_mol_pdb_idx_to_mol_atom_idx.update(
+                    {k: old_to_new[v] for k, v in pdb_idx_to_mol_idx.items()},
+                )
+                # Add the crosslink
+                other_molecule._add_bond(
+                    atom1=other_mol_pdb_idx_to_mol_atom_idx[this_idx],
+                    atom2=other_mol_pdb_idx_to_mol_atom_idx[other_idx],
+                    bond_order=crosslink_bond.order,
+                    is_aromatic=crosslink_bond.aromatic,
+                    stereochemistry=crosslink_bond.stereo,
+                    invalidate_cache=False,
+                )
+                # Discard the old molecule
+                molecules[:] = [mol for mol in molecules if mol is not this_molecule]
+                return other_molecule
+
+    return this_molecule

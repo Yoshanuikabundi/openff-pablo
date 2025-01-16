@@ -1,12 +1,12 @@
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from io import StringIO
 from pathlib import Path
 from typing import no_type_check
-from collections.abc import Iterable
 from urllib.request import urlopen
 
 from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
 
+from ..chem import PEPTIDE_BOND
 from ..residue import (
     AtomDefinition,
     BondDefinition,
@@ -16,8 +16,6 @@ from ..residue import (
 
 __all__ = [
     "CcdCache",
-    "PEPTIDE_BOND",
-    "LINKING_TYPES",
 ]
 
 
@@ -219,9 +217,9 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             with _defer_residue_definition_validation():
                 residue_definition = ResidueDefinition(
                     residue_name=residueName,
-                    parent_residue_name=parent_residue_name,
                     description=residue_description,
                     linking_bond=linking_bond,
+                    crosslink=None,
                     atoms=tuple(atoms),
                     bonds=tuple(bonds),
                 )
@@ -254,13 +252,6 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
 
 
 # TODO: Fill in this data
-PEPTIDE_BOND = BondDefinition(
-    atom1="C",
-    atom2="N",
-    order=1,
-    aromatic=False,
-    stereo=None,
-)
 LINKING_TYPES: dict[str, BondDefinition | None] = {
     # "D-beta-peptide, C-gamma linking".upper(): [],
     # "D-gamma-peptide, C-delta linking".upper(): [],
