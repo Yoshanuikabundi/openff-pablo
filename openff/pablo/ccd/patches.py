@@ -270,6 +270,10 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
     having two copies of the canonical ID atom. To fix this, we just split
     residue definitions with this clashing problem into two definitions, one
     with the canonical IDs and the other with the alternates.
+
+    Note that if a linking atom is part of a clash, this may interfere with
+    the disambiguated residue definition's ability to link to canonically named
+    residue definitions.
     """
     clashes: list[int] = []
     canonical_names = {atom.name for atom in res.atoms}
@@ -279,14 +283,13 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
                 clashes.append(i)
 
     if clashes:
-        old_to_new = {}
+        old_to_new: dict[str, str] = {}
         for atom in res.atoms:
             if atom.synonyms:
                 old_to_new[atom.name] = unwrap(atom.synonyms)
             else:
                 old_to_new[atom.name] = atom.name
 
-        # TODO: Update names in crosslinks and linking_bond if needed
         res1 = dataclasses.replace(
             res,
             atoms=[
@@ -316,6 +319,26 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
                 for bond in res.bonds
             ],
             description=res.description + "altids",
+            crosslink=(
+                None
+                if res.crosslink is None
+                else dataclasses.replace(
+                    res.crosslink,
+                    atom1=old_to_new[res.crosslink.atom1],
+                )
+            ),
+            linking_bond=(
+                None
+                if res.linking_bond is None
+                else dataclasses.replace(
+                    res.linking_bond,
+                    atom1=old_to_new[res.linking_bond.atom1],
+                    atom2=old_to_new.get(
+                        res.linking_bond.atom2,
+                        res.linking_bond.atom2,
+                    ),
+                )
+            ),
         )
         return [res1, res2]
     else:
