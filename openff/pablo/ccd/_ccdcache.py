@@ -217,7 +217,6 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             with _defer_residue_definition_validation():
                 residue_definition = ResidueDefinition(
                     residue_name=residueName,
-                    parent_residue_name=parent_residue_name,
                     description=residue_description,
                     linking_bond=linking_bond,
                     crosslink=None,

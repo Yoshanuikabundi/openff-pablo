@@ -170,7 +170,14 @@ def add_deprotonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]
                 else:
                     atoms.append(atom)
 
-            variants.append(dataclasses.replace(res, atoms=atoms, bonds=bonds))
+            variants.append(
+                dataclasses.replace(
+                    res,
+                    atoms=atoms,
+                    bonds=bonds,
+                    description=res.description + f" -{' -'.join(hydrogens)}",
+                ),
+            )
 
     return variants
 
@@ -182,9 +189,10 @@ def add_protonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
     variants: list[ResidueDefinition] = [res]
     for i in range(len(protonations)):
         for combination in combinations(protonations, i + 1):
+            bonds = [*res.bonds]
+            atoms = [*res.atoms]
             for heavy_atom, hydrogen in combination:
-                bonds = [
-                    *res.bonds,
+                bonds.append(
                     BondDefinition(
                         heavy_atom,
                         hydrogen,
@@ -192,9 +200,9 @@ def add_protonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
                         aromatic=False,
                         stereo=None,
                     ),
-                ]
+                )
 
-                atoms: list[AtomDefinition] = [
+                atoms.append(
                     AtomDefinition(
                         name=hydrogen,
                         synonyms=(),
@@ -204,14 +212,20 @@ def add_protonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
                         aromatic=False,
                         stereo=None,
                     ),
-                ]
-                for atom in res.atoms:
+                )
+                for i, atom in enumerate(res.atoms):
                     if atom.name == heavy_atom:
-                        atoms.append(dataclasses.replace(atom, charge=atom.charge + 1))
-                    else:
-                        atoms.append(atom)
+                        atoms[i] = dataclasses.replace(atom, charge=atom.charge + 1)
 
-                variants.append(dataclasses.replace(res, atoms=atoms, bonds=bonds))
+            hydrogens, _partners = zip(*combination)
+            variants.append(
+                dataclasses.replace(
+                    res,
+                    atoms=atoms,
+                    bonds=bonds,
+                    description=res.description + f" +{' +'.join(hydrogens)}",
+                ),
+            )
 
     return variants
 
@@ -301,6 +315,7 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
                 )
                 for bond in res.bonds
             ],
+            description=res.description + "altids",
         )
         return [res1, res2]
     else:
@@ -308,4 +323,18 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
 
 
 def add_disulfide_crosslink(res: ResidueDefinition) -> list[ResidueDefinition]:
-    return [dataclasses.replace(res, crosslink=DISULFIDE_BOND)]
+    if not {"HG", "SG"}.issubset({atom.name for atom in res.atoms}):
+        raise ValueError(
+            "Can only add disulfide crosslink to residue with HG and SG atoms",
+        )
+
+    return [
+        dataclasses.replace(
+            res,
+            crosslink=DISULFIDE_BOND,
+            atoms=[
+                atom if atom.name != "HG" else dataclasses.replace(atom, leaving=True)
+                for atom in res.atoms
+            ],
+        ),
+    ]

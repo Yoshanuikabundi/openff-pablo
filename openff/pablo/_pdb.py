@@ -251,7 +251,12 @@ def topology_from_pdb(
             # this is a debug assert, if it triggers there's a bug
             assert set(res_atom_idcs) == chemical_data.res_atom_idcs
         else:
-            raise MultipleMatchingResidueDefinitionsError(matches, res_atom_idcs, data)
+            raise MultipleMatchingResidueDefinitionsError(
+                matches,
+                res_atom_idcs,
+                data,
+                verbose_errors=verbose_errors,
+            )
 
         prototype_index = res_atom_idcs[0]
 
@@ -401,16 +406,9 @@ def add_to_molecule(
             # TODO: Support altlocs (probably in PdbData, maybe PdbData.residues()?)
             raise ValueError("altloc not yet supported")
 
-        charge_offset = (
-            1
-            if residue_match.crosslink is not None
-            and pdb_index in residue_match.crosslink
-            else 0
-        )
-
         mol_atom_idx = this_molecule._add_atom(
             atomic_number=elements.NUMBERS[atom_def.symbol],
-            formal_charge=atom_def.charge + charge_offset,
+            formal_charge=atom_def.charge,
             is_aromatic=atom_def.aromatic,
             stereochemistry=None,
             name=atom_def.name if use_canonical_names else data.name[pdb_index],

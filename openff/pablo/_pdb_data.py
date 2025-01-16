@@ -14,8 +14,8 @@ from .residue import AtomDefinition, ResidueDefinition
 
 @dataclass(frozen=True)
 class ResidueMatch:
-    index_to_atomdef: dict[int, AtomDefinition]
     residue_definition: ResidueDefinition
+    index_to_atomdef: dict[int, AtomDefinition]
     missing_atoms: set[str]
     crosslink: tuple[int, int] | None = None
     """PDB indices of each bonded atom"""
@@ -62,8 +62,7 @@ class ResidueMatch:
         return (
             linking_atom in self.canonical_atom_name_to_index
             and len(expected_leaving_atoms) > 0
-            and self.missing_leaving_atoms.intersection(expected_leaving_atoms)
-            == expected_leaving_atoms
+            and expected_leaving_atoms.issubset(self.missing_leaving_atoms)
         )
 
     @cached_property
@@ -77,8 +76,21 @@ class ResidueMatch:
         return (
             linking_atom in self.canonical_atom_name_to_index
             and len(expected_leaving_atoms) > 0
-            and self.missing_leaving_atoms.intersection(expected_leaving_atoms)
-            == expected_leaving_atoms
+            and expected_leaving_atoms.issubset(self.missing_leaving_atoms)
+        )
+
+    @cached_property
+    def expect_crosslink(self) -> bool:
+        if self.residue_definition.crosslink is None:
+            return False
+
+        linking_atom = self.residue_definition.crosslink.atom1
+        expected_leaving_atoms = self.residue_definition.crosslink_leaving_atoms
+
+        return (
+            linking_atom in self.canonical_atom_name_to_index
+            and len(expected_leaving_atoms) > 0
+            and expected_leaving_atoms.issubset(self.missing_leaving_atoms)
         )
 
     def agrees_with(self, other: Self) -> bool:
@@ -120,7 +132,26 @@ class ResidueMatch:
             if bond.atom1 in self.canonical_atom_name_to_index
             and bond.atom2 in self.canonical_atom_name_to_index
         }
-        return self_bonds == other_bonds
+        if self_bonds != other_bonds:
+            return False
+
+        if self.expect_crosslink and (
+            self.crosslink != other.crosslink
+            or self.residue_definition.crosslink != other.residue_definition.crosslink
+        ):
+            return False
+
+        if (self.expect_prior_bond or self.expect_posterior_bond) and (
+            self.residue_definition.linking_bond
+            != other.residue_definition.linking_bond
+        ):
+            return False
+
+        return (
+            self.expect_crosslink == other.expect_crosslink
+            and self.expect_prior_bond == other.expect_prior_bond
+            and self.expect_posterior_bond == other.expect_posterior_bond
+        )
 
 
 @dataclass
@@ -314,7 +345,9 @@ class PdbData:
 
             name_matches.append(residue_matches)
 
-        print(f"{len(name_matches[0])} matches from names")
+        print(
+            f"{len(name_matches[79])} matches from names for {name_matches[79][0].residue_definition.residue_name}",
+        )
 
         # Check for polymer bonds
         prev_filtered_matches: list[ResidueMatch] = []
@@ -366,11 +399,17 @@ class PdbData:
             linkage_matches.append(this_filtered_matches)
             prev_filtered_matches = this_filtered_matches
 
+        print(
+            f"{len(linkage_matches[79])} matches from polymer bonds for {linkage_matches[79][0].residue_definition.residue_name}",
+        )
+
         # Check for crosslinks
         for residue_matches in linkage_matches:
             for match in residue_matches:
                 if match.crosslink is not None:
                     # This match's crosslink has already been assigned
+                    continue
+                if not match.expect_crosslink:
                     continue
                 this_crosslink_def = match.residue_definition.crosslink
                 if this_crosslink_def is None:
@@ -392,7 +431,8 @@ class PdbData:
                             other_match.index_to_atomdef[other_crosslink_atom_idx].name
                         )
                         if (
-                            other_crosslink_def is not None
+                            other_match.expect_crosslink
+                            and other_crosslink_def is not None
                             and other_crosslink_def.flipped() == this_crosslink_def
                             and other_crosslink_def.atom2
                             == other_crosslink_atom_canonical_name
@@ -416,7 +456,7 @@ class PdbData:
                         yielded_matches.append(match)
                 yield yielded_matches
             else:
-                yield residue_matches
+                yield [match for match in residue_matches if not match.expect_crosslink]
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         return {
@@ -465,21 +505,37 @@ class PdbData:
             atom for atom in residue_definition.atoms if atom.name not in matched_atoms
         ]
 
-        # Match only if the set of all missing atoms is one of the following:
-        # - empty
-        # - the prior bond leaving fragment
-        # - the posterior bond leaving fragment
-        # - both leaving fragments
+        # Match only if all the leaving atoms associated with each linking atom
+        # is either entirely present or entirely absent
+        missing_atom_names = {atom.name for atom in missing_atoms}
         if any(not atom.leaving for atom in missing_atoms):
             return None
-        elif {atom.name for atom in missing_atoms} in [
-            set(),
-            residue_definition.prior_bond_leaving_atoms.union(
-                residue_definition.posterior_bond_leaving_atoms,
-            ),
-            residue_definition.prior_bond_leaving_atoms,
-            residue_definition.posterior_bond_leaving_atoms,
-        ]:
+        elif (
+            (
+                missing_atom_names.issuperset(
+                    residue_definition.prior_bond_leaving_atoms,
+                )
+                or missing_atom_names.isdisjoint(
+                    residue_definition.prior_bond_leaving_atoms,
+                )
+            )
+            and (
+                missing_atom_names.issuperset(
+                    residue_definition.posterior_bond_leaving_atoms,
+                )
+                or missing_atom_names.isdisjoint(
+                    residue_definition.posterior_bond_leaving_atoms,
+                )
+            )
+            and (
+                missing_atom_names.issuperset(
+                    residue_definition.crosslink_leaving_atoms,
+                )
+                or missing_atom_names.isdisjoint(
+                    residue_definition.crosslink_leaving_atoms,
+                )
+            )
+        ):
             return ResidueMatch(
                 index_to_atomdef=index_to_atomdef,
                 residue_definition=residue_definition,

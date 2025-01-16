@@ -74,7 +74,7 @@ class ResidueDefinition:
     """
 
     residue_name: str
-    parent_residue_name: str | None
+    """The 3-letter residue code used in PDB files"""
     description: str
     linking_bond: BondDefinition | None
     crosslink: BondDefinition | None
@@ -88,9 +88,13 @@ class ResidueDefinition:
         self._validate()
 
     def _validate(self):
-        if self.linking_bond is None and True in {atom.leaving for atom in self.atoms}:
+        if (
+            self.linking_bond is None
+            and self.crosslink is None
+            and True in {atom.leaving for atom in self.atoms}
+        ):
             raise ValueError(
-                f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond",
+                f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond or crosslink",
                 self,
             )
         if len({atom.name for atom in self.atoms}) != len(self.atoms):
@@ -99,26 +103,16 @@ class ResidueDefinition:
             )
 
         all_leaving_atoms = {atom.name for atom in self.atoms if atom.leaving}
-        assigned_leaving_atoms = self.prior_bond_leaving_atoms.union(
-            self.posterior_bond_leaving_atoms,
+        assigned_leaving_atoms = (
+            self.prior_bond_leaving_atoms
+            | self.posterior_bond_leaving_atoms
+            | self.crosslink_leaving_atoms
         )
         unassigned_leaving_atoms = all_leaving_atoms.difference(assigned_leaving_atoms)
         if len(unassigned_leaving_atoms) != 0:
             raise ValueError(
                 f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}",
             )
-
-        canonical_atom_names = {atom.name for atom in self.atoms}
-        if self.linking_bond is not None:
-            if self.linking_bond.atom1 not in canonical_atom_names:
-                raise ValueError(
-                    f"{self.residue_name}: linking bond atom {self.linking_bond.atom1} not found in residue",
-                )
-        if self.crosslink is not None:
-            if self.crosslink.atom1 not in canonical_atom_names:
-                raise ValueError(
-                    f"{self.residue_name}: crosslinked atom {self.crosslink.atom1} not found in residue",
-                )
 
     @classmethod
     def from_molecule(
@@ -128,7 +122,6 @@ class ResidueDefinition:
         linking_bond: BondDefinition | None = None,
         crosslink: BondDefinition | None = None,
         description: str = "",
-        parent_residue_name: str | None = None,
     ) -> Self:
         atoms: list[AtomDefinition] = []
         for atom in molecule.atoms:
@@ -157,7 +150,6 @@ class ResidueDefinition:
 
         return cls(
             residue_name=name,
-            parent_residue_name=parent_residue_name,
             description=description,
             linking_bond=linking_bond,
             crosslink=crosslink,
@@ -302,6 +294,14 @@ class ResidueDefinition:
             set()
             if self.linking_bond is None
             else set(self._leaving_fragment_of(self.prior_bond_linking_atom))
+        )
+
+    @cached_property
+    def crosslink_leaving_atoms(self) -> set[str]:
+        return (
+            set()
+            if self.crosslink is None
+            else set(self._leaving_fragment_of(self.crosslink.atom1))
         )
 
     @property

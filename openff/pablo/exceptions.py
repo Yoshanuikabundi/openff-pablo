@@ -9,9 +9,8 @@ __all__ = [
 ]
 
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING
-from collections.abc import Collection
 
 from openff.toolkit import Molecule
 
@@ -67,12 +66,29 @@ class MultipleMatchingResidueDefinitionsError(ValueError):
         matches: Sequence["ResidueMatch"],
         res_atom_idcs: tuple[int, ...],
         data: "PdbData",
+        verbose_errors: bool,
     ):
         i = res_atom_idcs[0]
-        super().__init__(
+
+        msg = (
             f"{len(matches)} residue definitions matched residue "
-            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}",
+            + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}"
         )
+
+        if verbose_errors:
+            msg += ":"
+            msg = "\n    ".join(
+                [
+                    msg,
+                    *map(
+                        lambda m: m.residue_definition.description
+                        + f" {m.expect_crosslink=} {m.expect_prior_bond=} {m.expect_posterior_bond=}",
+                        matches,
+                    ),
+                ],
+            )
+
+        super().__init__(msg)
 
 
 class UnknownOrAmbiguousSerialInConectError(ValueError):
