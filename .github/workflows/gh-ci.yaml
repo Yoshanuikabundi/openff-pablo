@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   main-tests:
-    if: "github.repository == 'yoshanuikabundi/openff-pablo'"
+    if: "github.repository == 'openforcefield/openff-pablo'"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

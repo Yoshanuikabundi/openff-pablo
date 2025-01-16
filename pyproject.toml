@@ -38,7 +38,7 @@ doc = [
 ]
 
 # [project.urls]
-# source = "https://github.com/yoshanuikabundi/openff-pablo"
+# source = "https://github.com/openforcefield/openff-pablo"
 # documentation = "https://openff-pablo.readthedocs.io"
 
 [tool.versioningit]
