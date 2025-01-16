@@ -6,6 +6,8 @@ import dataclasses
 from copy import deepcopy
 from itertools import combinations
 
+from openff.pablo.chem import DISULFIDE_BOND
+
 from .._utils import flatten, unwrap
 from ..residue import (
     AtomDefinition,
@@ -270,6 +272,7 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
             else:
                 old_to_new[atom.name] = atom.name
 
+        # TODO: Update names in crosslinks and linking_bond if needed
         res1 = dataclasses.replace(
             res,
             atoms=[
@@ -302,3 +305,7 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
         return [res1, res2]
     else:
         return [res]
+
+
+def add_disulfide_crosslink(res: ResidueDefinition) -> list[ResidueDefinition]:
+    return [dataclasses.replace(res, crosslink=DISULFIDE_BOND)]

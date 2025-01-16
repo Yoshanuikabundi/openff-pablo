@@ -5,16 +5,19 @@ Exceptions for the PDB loader.
 __all__ = [
     "NoMatchingResidueDefinitionError",
     "MultipleMatchingResidueDefinitionsError",
+    "UnknownOrAmbiguousSerialInConectError",
 ]
 
 
-from collections.abc import Sequence
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Collection
 
 from openff.toolkit import Molecule
 
-from openff.pablo._pdb_data import PdbData, ResidueMatch
-from openff.pablo.residue import ResidueDefinition
+if TYPE_CHECKING:
+    from openff.pablo._pdb_data import PdbData, ResidueMatch
+    from openff.pablo.residue import ResidueDefinition
 
 
 class NoMatchingResidueDefinitionError(ValueError):
@@ -25,10 +28,10 @@ class NoMatchingResidueDefinitionError(ValueError):
         res_atom_idcs: Sequence[int],
         data: "PdbData",
         unknown_molecules: Iterable[Molecule],
-        additional_substructures: Iterable[ResidueDefinition],
+        additional_substructures: Iterable["ResidueDefinition"],
         residue_database: Mapping[
             str,
-            Iterable[ResidueDefinition],
+            Iterable["ResidueDefinition"],
         ],
         verbose_errors: bool = False,
     ):
@@ -70,3 +73,16 @@ class MultipleMatchingResidueDefinitionsError(ValueError):
             f"{len(matches)} residue definitions matched residue "
             + f"{data.chain_id[i]}:{data.res_name[i]}#{data.res_seq[i]}",
         )
+
+
+class UnknownOrAmbiguousSerialInConectError(ValueError):
+    def __init__(self, serial: int, possible_indices: Collection[int]):
+        self.serial = serial
+        self.possible_indices = possible_indices
+        msg = f"Atom serial {serial} was found in a CONECT record, "
+        if len(possible_indices) == 0:
+            msg += "but no corresponding ATOM/HETATM record was found"
+        else:
+            msg += "but multiple corresponding ATOM/HETATM records were found "
+            msg += f"(records {','.join(map(str, possible_indices))})"
+        super().__init__(msg)

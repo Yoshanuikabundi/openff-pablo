@@ -77,6 +77,7 @@ class ResidueDefinition:
     parent_residue_name: str | None
     description: str
     linking_bond: BondDefinition | None
+    crosslink: BondDefinition | None
     atoms: tuple[AtomDefinition, ...]
     bonds: tuple[BondDefinition, ...]
 
@@ -107,12 +108,25 @@ class ResidueDefinition:
                 f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}",
             )
 
+        canonical_atom_names = {atom.name for atom in self.atoms}
+        if self.linking_bond is not None:
+            if self.linking_bond.atom1 not in canonical_atom_names:
+                raise ValueError(
+                    f"{self.residue_name}: linking bond atom {self.linking_bond.atom1} not found in residue",
+                )
+        if self.crosslink is not None:
+            if self.crosslink.atom1 not in canonical_atom_names:
+                raise ValueError(
+                    f"{self.residue_name}: crosslinked atom {self.crosslink.atom1} not found in residue",
+                )
+
     @classmethod
     def from_molecule(
         cls,
         name: str,
         molecule: Molecule,
         linking_bond: BondDefinition | None = None,
+        crosslink: BondDefinition | None = None,
         description: str = "",
         parent_residue_name: str | None = None,
     ) -> Self:
@@ -146,6 +160,7 @@ class ResidueDefinition:
             parent_residue_name=parent_residue_name,
             description=description,
             linking_bond=linking_bond,
+            crosslink=crosslink,
             atoms=tuple(atoms),
             bonds=tuple(bonds),
         )
@@ -157,6 +172,7 @@ class ResidueDefinition:
         molecule: Molecule,
         leaving_atom_indices: Collection[int],
         linking_bond: BondDefinition,
+        crosslink: BondDefinition | None = None,
         description: str = "",
     ) -> Self:
         molecule = deepcopy(molecule)
@@ -166,6 +182,7 @@ class ResidueDefinition:
             name=name,
             molecule=molecule,
             linking_bond=linking_bond,
+            crosslink=crosslink,
             description=description,
         )
 
@@ -177,6 +194,7 @@ class ResidueDefinition:
         atom_names: Mapping[int, str],
         leaving_atoms: Collection[int] = (),
         linking_bond: BondDefinition | None = None,
+        crosslink: BondDefinition | None = None,
         description: str = "",
     ) -> Self:
         molecule = Molecule.from_mapped_smiles(mapped_smiles)
@@ -191,6 +209,7 @@ class ResidueDefinition:
             molecule=molecule,
             linking_bond=linking_bond,
             description=description,
+            crosslink=crosslink,
         )
 
     def to_openff_molecule(self) -> Molecule:

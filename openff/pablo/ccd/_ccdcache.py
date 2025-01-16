@@ -220,6 +220,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
                     parent_residue_name=parent_residue_name,
                     description=residue_description,
                     linking_bond=linking_bond,
+                    crosslink=None,
                     atoms=tuple(atoms),
                     bonds=tuple(bonds),
                 )
