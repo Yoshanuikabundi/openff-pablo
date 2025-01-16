@@ -14,7 +14,7 @@ Pablo has a (developing) PDB test suite.
 *   - 5ap1_prepared.pdb
     - ACE/NME caps, `unique_molecules`
 *   - 193L_prepared.pdb
-    - Baseline protein, disulfides
+    - disulfides, all 20 canonical amino acids, charged terminii, charged canonical AA side chains
 :::
 
 <script>

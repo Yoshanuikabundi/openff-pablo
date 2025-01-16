@@ -37,12 +37,19 @@ class AtomDefinition:
     """
 
     name: str
+    """The canonical name of this atom"""
     synonyms: tuple[str, ...]
+    """Other names this atom can have"""
     symbol: str
+    """The elemental symbol for this atom"""
     leaving: bool
+    """Whether this atom is absent when some bond is formed between this residue and another"""
     charge: int
+    """The formal charge of this atom"""
     aromatic: bool
+    """Whether this atom is aromatic"""
     stereo: Literal["S", "R"] | None
+    """The chirality of this atom"""
 
 
 @dataclass(frozen=True)
@@ -52,10 +59,15 @@ class BondDefinition:
     """
 
     atom1: str
+    """The canonical name of the first atom in this bond"""
     atom2: str
+    """The canonical name of the second atom in this bond"""
     order: int
+    """The bond order of this bond (1 for single bond, 2 for double bond, etc.)"""
     aromatic: bool
+    """``True`` if this bond is aromatic, ``False`` otherwise"""
     stereo: Literal["E", "Z"] | None
+    """The stereochemistry of this bond."""
 
     def flipped(self) -> Self:
         """The same bond, but with the atoms in the opposite order"""
@@ -76,10 +88,69 @@ class ResidueDefinition:
     residue_name: str
     """The 3-letter residue code used in PDB files"""
     description: str
+    """A longer description of the residue"""
     linking_bond: BondDefinition | None
+    """Description of how this residue may bond to its neighbours in a polymer
+
+    If the residue is only found as a monomer, ``None``. Otherwise, a
+    :py:cls:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
+    canonical atom names of the atoms that form the linking bond. ``atom1`` is
+    the name of the atom in the residue preceding the bond, and ``atom2`` is in
+    the residue after the bond. Any atoms that the bond between residues
+    replaces should be marked as ``atom.leaving=True``.
+
+    A linking bond will be formed to join two residues if and only if all of the
+    below are true:
+
+    - The residues' atom records are sequential in the PDB file
+    - The residues have the same chain ID
+    - There is no TER record between the residues in the PDB file
+    - The two residues have identical ``linking_bond`` attributes
+    - All leaving atoms associated with ``linking_bond.atom1`` are absent in
+    the first encountered residue, and all leaving atoms associated with
+    ``linking_bond.atom2`` are absent in the latter residue. Leaving atoms
+    are those that have the ``AtomDefinition.leaving`` attribute set to
+    ``True``. A leaving atom is associated with atom `a` if it is bonded to
+    `a`, or it is bonded to an atom associated with `a`.
+    - There is at least one leaving atom associated with each linking atom
+
+    The charge of linking atoms is not modified; any change in valence is
+    accounted for via the removal of leaving atoms.
+    """
     crosslink: BondDefinition | None
+    """Optional description of a crosslink between this residue and another.
+
+    A crosslink is a bond between this residue and another. Crosslinks differ
+    from linking bonds primarily because they may occur between residues that
+    are do not appear sequentially in the PDB file. Crosslinks cannot occur
+    within a residue; use a bond or residue variant instead.
+
+    If the residue does not form cross links, ``None``. Otherwise, a
+    :py:cls:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
+    canonical atom names of the atoms that form the crosslink. ``atom1`` is
+    the name of the atom in this residue, and ``atom2`` is in the other residue.
+    Any atoms that the bond between residues replaces should be marked as
+    ``atom.leaving=True``.
+
+    A crosslink will be formed between two residues if and only if all of the
+    below are true:
+
+    - The two residues' ``crosslink`` attributes are identical except that their
+    atom names are reversed
+    - All leaving atoms associated with each residues' ``crosslink.atom1``
+    attribute are absent in that residue. Leaving atoms are those that have the
+    ``AtomDefinition.leaving`` attribute set to ``True``. A leaving atom is
+    associated with atom `a` if it is bonded to `a`, or it is bonded to an atom
+    associated with `a`.
+    - There is at least one leaving atom associated with each cross-linking atom
+
+    The charge of linking atoms is not modified; any change in valence is
+    accounted for via the removal of leaving atoms.
+    """
     atoms: tuple[AtomDefinition, ...]
+    """The atom definitions that make up this residue"""
     bonds: tuple[BondDefinition, ...]
+    """The bond definitions that make up this residue"""
 
     def __post_init__(self):
         if _residue_definition_skip_validation:
