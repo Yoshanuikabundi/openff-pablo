@@ -1,48 +1,418 @@
+from collections import defaultdict
+from pathlib import Path
+from typing import DefaultDict
+
 import pytest
-from pkg_resources import resource_filename
 
-from openff.pablo._pdb_data import PdbData
+from openff.pablo._pdb_data import PdbData, ResidueMatch
 from openff.pablo.exceptions import UnknownOrAmbiguousSerialInConectError
+from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefinition
 
 
-@pytest.mark.parametrize("pdbfile", ["data/5ap1_prepared.pdb"])
-def test_can_load_pdb_file_as_data(pdbfile: str):
-    data = PdbData.from_file(resource_filename(__name__, pdbfile))
-    assert len(data.name) == 53520
+class TestResidueMatch:
+    def test_get_atom_by_index(self, cys_match: ResidueMatch):
+        for i, atom in enumerate(cys_match.residue_definition.atoms):
+            assert cys_match.atom(i) == atom
 
+    def test_get_atom_by_name(self, cys_match: ResidueMatch):
+        for atom in cys_match.residue_definition.atoms:
+            assert cys_match.atom(atom.name) == atom
 
-def test_process_conects_produces_indices():
-    serial_to_index: dict[int, list[int]] = {3: [0], 4: [1]}
-    lines: list[str] = ["CONECT    3    4"]
+    def test_get_atom_type_error(self, cys_match: ResidueMatch):
+        with pytest.raises(TypeError):
+            cys_match.atom(3.14159)  # type: ignore
 
-    conects = PdbData._process_conects(
-        lines,
-        serial_to_index,
-        conects=[set(), set()],
+    def test_set_crosslink_mutates_match(self, cys_match: ResidueMatch):
+        cys_match.set_crosslink(cys_match.canonical_atom_name_to_index["SG"], 99)
+        assert cys_match.crosslink == (cys_match.canonical_atom_name_to_index["SG"], 99)
+
+    def test_set_crosslink_raises_on_wrong_atom(self, cys_match: ResidueMatch):
+        with pytest.raises(ValueError):
+            cys_match.set_crosslink(cys_match.canonical_atom_name_to_index["C"], 99)
+
+    def test_set_crosslink_raises_on_atom1_from_other_residue(
+        self,
+        cys_match: ResidueMatch,
+    ):
+        with pytest.raises(ValueError):
+            n_matched_atoms = len(cys_match.res_atom_idcs)
+            cys_match.set_crosslink(n_matched_atoms + 1, n_matched_atoms + 2)
+
+    def test_set_crosslink_raises_on_atom2_from_this_residue(
+        self,
+        cys_match: ResidueMatch,
+    ):
+        with pytest.raises(ValueError):
+            cys_match.set_crosslink(cys_match.canonical_atom_name_to_index["SG"], 0)
+
+    @pytest.mark.parametrize(
+        "expect_prop_suffix",
+        ("prior_bond", "posterior_bond", "crosslink"),
     )
+    def test_expect_props_false_when_not_supported_by_resdef(
+        self,
+        expect_prop_suffix: str,
+        hoh_match: ResidueMatch,
+    ):
+        assert getattr(hoh_match, "expect_" + expect_prop_suffix) is False
 
-    assert conects == [{1}, {0}]
+    @pytest.mark.parametrize(
+        "expect_prop_suffix",
+        ("prior_bond", "posterior_bond", "crosslink"),
+    )
+    def test_expect_props_false_when_leaving_atoms_present(
+        self,
+        expect_prop_suffix: str,
+        cys_match: ResidueMatch,
+    ):
+        assert getattr(cys_match, "expect_" + expect_prop_suffix) is False
+
+    def test_expect_props_false_when_leaving_atoms_missing_from_resdef(
+        self,
+        cys_match_no_leaving_deprotonated_sidechain: ResidueMatch,
+    ):
+        assert cys_match_no_leaving_deprotonated_sidechain.expect_crosslink is False
+
+    @pytest.mark.parametrize(
+        "expect_prop_suffix",
+        ("prior_bond", "posterior_bond", "crosslink"),
+    )
+    def test_expect_props_true_when_leaving_atoms_absent(
+        self,
+        expect_prop_suffix: str,
+        cys_match_no_leaving: ResidueMatch,
+    ):
+        assert getattr(cys_match_no_leaving, "expect_" + expect_prop_suffix) is True
+
+    def test_match_agrees_with_self(self, any_match: ResidueMatch):
+        any_match.agrees_with(any_match)
 
 
-def test_process_conects_raises_when_ambiguous():
-    serial_to_index: dict[int, list[int]] = {3: [0], 4: [1, 2]}
-    lines: list[str] = ["CONECT    3    4"]
+class TestPdbData:
+    def test_can_load_pdb_file(self, pdbfn: Path):
+        data = PdbData.from_file(pdbfn)
+        n_atom_records = len(
+            [
+                line
+                for line in pdbfn.read_text().splitlines()
+                if line.startswith("ATOM  ") or line.startswith("HETATM")
+            ],
+        )
+        for field_name in [
+            "name",
+            "model",
+            "serial",
+            "alt_loc",
+            "res_name",
+            "chain_id",
+            "res_seq",
+            "i_code",
+            "x",
+            "y",
+            "z",
+            "occupancy",
+            "temp_factor",
+            "element",
+            "charge",
+            "terminated",
+            "conects",
+        ]:
+            assert len(getattr(data, field_name)) == n_atom_records
 
-    with pytest.raises(UnknownOrAmbiguousSerialInConectError):
-        PdbData._process_conects(
-            lines,
-            serial_to_index,
-            conects=[set(), set(), set()],
+    def test_append_coord_line(self):
+        data = PdbData()
+        data._append_coord_line(
+            "ATOM     16  HD2 LYS A   1      -1.806   9.969   9.991  1.00  0.00           H",
         )
 
+        expected_serial_to_index: DefaultDict[int, list[int]] = defaultdict(list)
+        expected_serial_to_index.update({16: [0]})
+        assert data == PdbData(
+            model=[None],
+            serial=[16],
+            name=["HD2"],
+            alt_loc=[""],
+            res_name=["LYS"],
+            chain_id=["A"],
+            res_seq=[1],
+            i_code=[" "],
+            x=[-1.806],
+            y=[9.969],
+            z=[9.991],
+            occupancy=[1.00],
+            temp_factor=[0.00],
+            element=["H"],
+            charge=[0],
+            terminated=[False],
+            serial_to_index=expected_serial_to_index,
+            conects=[set()],
+            cryst1_a=None,
+            cryst1_b=None,
+            cryst1_c=None,
+            cryst1_alpha=None,
+            cryst1_beta=None,
+            cryst1_gamma=None,
+        )
 
-def test_process_conects_raises_when_serial_missing():
-    serial_to_index: dict[int, list[int]] = {3: [0], 4: [1, 2]}
-    lines: list[str] = ["CONECT    3    5"]
+    def test_parse_waters_pdb(self):
+        pdblines = [
+            "CRYST1   10.000   10.000   10.000  90.00  90.00  90.00 P 1           1 ",
+            "MODEL        1",
+            "ATOM      1  H1  HOH A   1      -1.806   8.969   4.991  1.00  0.00           H",
+            "ATOM      2  H2  HOH A   1      -2.806   9.969   4.991  0.99  0.00           H",
+            "ATOM      3  O   HOH A   1      -1.806   9.969   4.991  1.00  0.00           O",
+            "HETATM    4  H1  HOH A   2      -1.806   8.969   9.991  1.00  0.00           H",
+            "HETATM    5  H2  HOH A   2      -2.806   9.969   9.991  1.00  0.00           H",
+            "HETATM    6  O   HOH A   2      -1.806   9.969   9.991  1.00  0.00           O",
+            "TER       7      HOH A   2",
+            "CONECT    1    3",
+            "CONECT    2    3",
+            "CONECT    3    1    2",
+            "CONECT    4    6",
+            "CONECT    5    6",
+            "CONECT    6    4    5",
+            "ENDMDL",
+        ]
+        data = PdbData.parse_pdb(pdblines)
+        expected_serial_to_index: DefaultDict[int, list[int]] = defaultdict(list)
+        expected_serial_to_index.update(
+            {1: [0], 2: [1], 3: [2], 4: [3], 5: [4], 6: [5]},
+        )
+        assert data == PdbData(
+            model=[1, 1, 1, 1, 1, 1],
+            serial=[1, 2, 3, 4, 5, 6],
+            name=["H1", "H2", "O", "H1", "H2", "O"],
+            alt_loc=["", "", "", "", "", ""],
+            res_name=["HOH", "HOH", "HOH", "HOH", "HOH", "HOH"],
+            chain_id=["A", "A", "A", "A", "A", "A"],
+            res_seq=[1, 1, 1, 2, 2, 2],
+            i_code=[" ", " ", " ", " ", " ", " "],
+            x=[-1.806, -2.806, -1.806, -1.806, -2.806, -1.806],
+            y=[8.969, 9.969, 9.969, 8.969, 9.969, 9.969],
+            z=[4.991, 4.991, 4.991, 9.991, 9.991, 9.991],
+            occupancy=[1.00, 0.99, 1.00, 1.00, 1.00, 1.00],
+            temp_factor=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+            element=["H", "H", "O", "H", "H", "O"],
+            charge=[0, 0, 0, 0, 0, 0],
+            terminated=[False, False, False, True, True, True],
+            serial_to_index=expected_serial_to_index,
+            conects=[{2}, {2}, {0, 1}, {5}, {5}, {3, 4}],
+            cryst1_a=10.0,
+            cryst1_b=10.0,
+            cryst1_c=10.0,
+            cryst1_alpha=90.0,
+            cryst1_beta=90.0,
+            cryst1_gamma=90.0,
+        )
 
-    with pytest.raises(UnknownOrAmbiguousSerialInConectError):
-        PdbData._process_conects(
+    def test_process_conects_produces_indices(self):
+        serial_to_index: dict[int, list[int]] = {3: [0], 4: [1]}
+        lines: list[str] = ["CONECT    3    4"]
+
+        conects = PdbData._process_conects(
             lines,
             serial_to_index,
-            conects=[set(), set(), set()],
+            conects=[set(), set()],
         )
+
+        assert conects == [{1}, {0}]
+
+    def test_process_conects_raises_when_ambiguous(self):
+        serial_to_index: dict[int, list[int]] = {3: [0], 4: [1, 2]}
+        lines: list[str] = ["CONECT    3    4"]
+
+        with pytest.raises(UnknownOrAmbiguousSerialInConectError):
+            PdbData._process_conects(
+                lines,
+                serial_to_index,
+                conects=[set(), set(), set()],
+            )
+
+    def test_process_conects_raises_when_serial_missing(self):
+        serial_to_index: dict[int, list[int]] = {3: [0], 4: [1, 2]}
+        lines: list[str] = ["CONECT    3    5"]
+
+        with pytest.raises(UnknownOrAmbiguousSerialInConectError):
+            PdbData._process_conects(
+                lines,
+                serial_to_index,
+                conects=[set(), set(), set()],
+            )
+
+    def test_residue_indices(self):
+        data = PdbData(
+            model=[None] * 2 + [1] * 10,
+            res_name=["HOH"] * 4 + ["GLY"] * 8,
+            chain_id=["A"] * 6 + ["B"] * 6,
+            res_seq=[1] * 8 + [2] * 4,
+            i_code=[" "] * 10 + ["A"] * 2,
+        )
+
+        assert list(data.residue_indices) == [
+            (0, 1),
+            (2, 3),
+            (4, 5),
+            (6, 7),
+            (8, 9),
+            (10, 11),
+        ]
+
+    def test_subset_matches_residue_raises_on_empty(
+        self,
+        hewl_data: PdbData,
+        cys_def: ResidueDefinition,
+    ):
+        with pytest.raises(ValueError):
+            hewl_data.subset_matches_residue([], cys_def)
+
+    def test_subset_matches_residue_succeeds_when_all_atoms_present(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+    ):
+        assert (
+            cys_data.subset_matches_residue(
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+                cys_def,
+            )
+            is not None
+        )
+
+    def test_subset_matches_residue_fails_on_multiply_matched_atom(self):
+        res_def = ResidueDefinition(
+            linking_bond=None,
+            atoms=(
+                AtomDefinition.with_defaults(name="H1", symbol="H", synonyms=["H"]),
+                AtomDefinition.with_defaults(name="O", symbol="O", charge=-1),
+            ),
+            bonds=(BondDefinition.with_defaults(atom1="H1", atom2="O"),),
+            crosslink=None,
+            description="",
+            residue_name="UNK",
+        )
+        charges = [0, 0]
+        elements = ["", ""]
+        assert (
+            PdbData(
+                name=["H1", "H"],
+                charge=charges,
+                element=elements,
+            ).subset_matches_residue([0, 1], res_def)
+            is None
+        )
+        assert (
+            PdbData(
+                name=["O", "H"],
+                charge=charges,
+                element=elements,
+            ).subset_matches_residue([0, 1], res_def)
+            is not None
+        )
+
+    def test_subset_matches_residue_succeeds_when_all_leaving_atoms_absent(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+    ):
+        leaving_atoms = {atom.name for atom in cys_def.atoms if atom.leaving}
+        assert (
+            cys_data.subset_matches_residue(
+                [
+                    i
+                    for i, name in enumerate(cys_data.name)
+                    if name not in leaving_atoms
+                ],
+                cys_def,
+            )
+            is not None
+        )
+
+    def test_subset_matches_residue_fails_when_nonleaving_atom_missing(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+    ):
+        # Missing atom 1 (CA), a non-leaving atom
+        assert cys_data.name[1] == "CA"
+        assert cys_def.name_to_atom["CA"].leaving is False
+        assert (
+            cys_data.subset_matches_residue(
+                [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+                cys_def,
+            )
+            is None
+        )
+
+    def test_subset_matches_residue_fails_when_linkage_leaving_atoms_partially_missing(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+    ):
+        # Missing atom 13 (HXT), one of two posterior bond leaving atoms
+        assert cys_data.name[13] == "HXT"
+        assert (
+            cys_data.subset_matches_residue(
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                cys_def,
+            )
+            is None
+        )
+
+    @pytest.mark.parametrize("bond_name", ("prior_bond", "posterior_bond", "crosslink"))
+    def test_subset_matches_residue_succeeds_when_posterior_bond_leaving_atoms_missing(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+        bond_name: str,
+    ):
+        subset = [
+            i
+            for i, name in enumerate(cys_data.name)
+            if name not in getattr(cys_def, bond_name + "_leaving_atoms")
+        ]
+        assert len(subset) in [12, 13]
+        assert cys_data.subset_matches_residue(subset, cys_def) is not None
+
+    def test_subset_matches_residue_fails_on_element_mismatch(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+    ):
+        cys_data.element[5] = "Zr"
+        assert (
+            cys_data.subset_matches_residue(range(len(cys_def.atoms)), cys_def) is None
+        )
+
+    def test_subset_matches_residue_fails_on_charge_mismatch(
+        self,
+        cys_def: ResidueDefinition,
+        cys_data: PdbData,
+    ):
+        cys_data.charge[5] = +2
+        assert (
+            cys_data.subset_matches_residue(range(len(cys_def.atoms)), cys_def) is None
+        )
+
+    def test_subset_matches_residue_tolerates_zero_charge_and_empty_element(self):
+        resdef = ResidueDefinition(
+            atoms=(AtomDefinition.with_defaults("H", "H", charge=1),),
+            bonds=(),
+            crosslink=None,
+            linking_bond=None,
+            description="",
+            residue_name="HPL",
+        )
+        data = PdbData(name=["H"], element=[""], charge=[0])
+        assert data.subset_matches_residue([0], resdef) is not None
+
+    def test_subset_matches_residue_tolerates_wrong_case_element(self):
+        resdef = ResidueDefinition(
+            atoms=(AtomDefinition.with_defaults("H", "H", charge=1),),
+            bonds=(),
+            crosslink=None,
+            linking_bond=None,
+            description="",
+            residue_name="HPL",
+        )
+        data = PdbData(name=["H"], element=["h"], charge=[1])
+        assert data.subset_matches_residue([0], resdef) is not None

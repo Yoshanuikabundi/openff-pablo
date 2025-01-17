@@ -9,6 +9,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Literal, Self
+from collections.abc import Iterable
 
 from openff.toolkit import Molecule
 from openff.units import elements, unit
@@ -51,6 +52,27 @@ class AtomDefinition:
     stereo: Literal["S", "R"] | None
     """The chirality of this atom"""
 
+    @classmethod
+    def with_defaults(
+        cls,
+        name: str,
+        symbol: str,
+        synonyms: Iterable[str] = (),
+        leaving: bool = False,
+        charge: int = 0,
+        aromatic: bool = False,
+        stereo: Literal["S", "R"] | None = None,
+    ) -> Self:
+        return cls(
+            name=name,
+            symbol=symbol,
+            synonyms=tuple(synonyms),
+            leaving=leaving,
+            charge=charge,
+            aromatic=aromatic,
+            stereo=stereo,
+        )
+
 
 @dataclass(frozen=True)
 class BondDefinition:
@@ -77,6 +99,23 @@ class BondDefinition:
         """The same bond, but with the atoms in sorted order"""
         sorted_atoms = sorted([self.atom1, self.atom2])
         return dataclasses.replace(self, atom1=sorted_atoms[0], atom2=sorted_atoms[1])
+
+    @classmethod
+    def with_defaults(
+        cls,
+        atom1: str,
+        atom2: str,
+        order: int = 1,
+        aromatic: bool = False,
+        stereo: Literal["E", "Z"] | None = None,
+    ) -> Self:
+        return cls(
+            atom1=atom1,
+            atom2=atom2,
+            order=order,
+            aromatic=aromatic,
+            stereo=stereo,
+        )
 
 
 @dataclass(frozen=True)

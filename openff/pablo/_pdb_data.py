@@ -16,7 +16,6 @@ from .residue import AtomDefinition, ResidueDefinition
 class ResidueMatch:
     residue_definition: ResidueDefinition
     index_to_atomdef: dict[int, AtomDefinition]
-    missing_atoms: set[str]
     crosslink: tuple[int, int] | None = None
     """PDB indices of each bonded atom"""
 
@@ -29,6 +28,13 @@ class ResidueMatch:
             raise TypeError(f"unknown identifier type {type(identifier)}")
 
     def set_crosslink(self, atom1_idx: int, atom2_idx: int) -> None:
+        if (
+            self.residue_definition.crosslink is None
+            or atom1_idx not in self.res_atom_idcs
+            or self.atom(atom1_idx).name != self.residue_definition.crosslink.atom1
+            or atom2_idx in self.res_atom_idcs
+        ):
+            raise ValueError("bad crosslink index(es)")
         object.__setattr__(self, "crosslink", (atom1_idx, atom2_idx))
 
     @cached_property
@@ -38,6 +44,14 @@ class ResidueMatch:
     @cached_property
     def prototype_index(self) -> int:
         return next(iter(self.index_to_atomdef))
+
+    @cached_property
+    def missing_atoms(self) -> set[str]:
+        return {
+            atom.name
+            for atom in self.residue_definition.atoms
+            if atom.name not in self.canonical_atom_name_to_index
+        }
 
     @cached_property
     def missing_leaving_atoms(self) -> set[str]:
@@ -311,6 +325,104 @@ class PdbData:
 
         yield tuple(indices)
 
+    def subset_matches_residue(
+        self,
+        res_atom_idcs: Sequence[int],
+        residue_definition: ResidueDefinition,
+    ) -> ResidueMatch | None:
+        # Raise an error if the match would be empty - this way the
+        # return value's truthiness always reflects whether there was a match
+        if len(res_atom_idcs) == 0:
+            raise ValueError("cannot match empty res_atom_idcs")
+
+        # Skip definitions with too few atoms
+        if len(residue_definition.atoms) < len(res_atom_idcs):
+            return None
+
+        # Skip non-(cross)linking definitions with the wrong number of atoms
+        if (
+            residue_definition.linking_bond is None
+            and residue_definition.crosslink is None
+            and len(
+                residue_definition.atoms,
+            )
+            != len(res_atom_idcs)
+        ):
+            return None
+
+        # Get the map from the canonical names to the indices
+        try:
+            index_to_atomdef = {
+                i: residue_definition.name_to_atom[self.name[i]] for i in res_atom_idcs
+            }
+        except KeyError:
+            return None
+
+        matched_atoms = {atom.name for atom in index_to_atomdef.values()}
+
+        # Fail to match if any atoms in PDB file got matched to more than one name
+        if len(matched_atoms) != len(res_atom_idcs):
+            return None
+
+        # This assert should be guaranteed by the above
+        assert set(index_to_atomdef.keys()) == set(res_atom_idcs)
+
+        # Check that elements match, but tolerate missing columns and wrong case
+        if any(
+            self.element[i] != "" and self.element[i].lower() != atom.symbol.lower()
+            for i, atom in index_to_atomdef.items()
+        ):
+            return None
+
+        # Check that charges match, but tolerate missing columns (zeros)
+        if any(
+            self.charge[i] != 0 and self.charge[i] != atom.charge
+            for i, atom in index_to_atomdef.items()
+        ):
+            return None
+
+        missing_atoms = [
+            atom for atom in residue_definition.atoms if atom.name not in matched_atoms
+        ]
+
+        # Match only if all the leaving atoms associated with each linking atom
+        # is either entirely present or entirely absent
+        missing_atom_names = {atom.name for atom in missing_atoms}
+        if any(not atom.leaving for atom in missing_atoms):
+            return None
+        elif (
+            (
+                missing_atom_names.issuperset(
+                    residue_definition.prior_bond_leaving_atoms,
+                )
+                or missing_atom_names.isdisjoint(
+                    residue_definition.prior_bond_leaving_atoms,
+                )
+            )
+            and (
+                missing_atom_names.issuperset(
+                    residue_definition.posterior_bond_leaving_atoms,
+                )
+                or missing_atom_names.isdisjoint(
+                    residue_definition.posterior_bond_leaving_atoms,
+                )
+            )
+            and (
+                missing_atom_names.issuperset(
+                    residue_definition.crosslink_leaving_atoms,
+                )
+                or missing_atom_names.isdisjoint(
+                    residue_definition.crosslink_leaving_atoms,
+                )
+            )
+        ):
+            return ResidueMatch(
+                index_to_atomdef=index_to_atomdef,
+                residue_definition=residue_definition,
+            )
+        else:
+            return None
+
     def get_residue_matches(
         self,
         residue_database: Mapping[str, Iterable[ResidueDefinition]],
@@ -427,9 +539,9 @@ class PdbData:
                     other_matches = linkage_matches[other_crosslink_res_idx]
                     for other_match in other_matches:
                         other_crosslink_def = other_match.residue_definition.crosslink
-                        other_crosslink_atom_canonical_name = (
-                            other_match.index_to_atomdef[other_crosslink_atom_idx].name
-                        )
+                        other_crosslink_atom_canonical_name = other_match.atom(
+                            other_crosslink_atom_idx,
+                        ).name
                         if (
                             other_match.expect_crosslink
                             and other_crosslink_def is not None
@@ -463,105 +575,3 @@ class PdbData:
             field.name: getattr(self, field.name)[index]
             for field in dataclasses.fields(self)
         }
-
-    def subset_matches_residue(
-        self,
-        res_atom_idcs: Sequence[int],
-        residue_definition: ResidueDefinition,
-    ) -> ResidueMatch | None:
-        # Raise an error if the returned dict would be empty - this way the
-        # return value's truthiness always reflects whether there was a match
-        if len(res_atom_idcs) == 0:
-            raise ValueError("cannot match empty res_atom_idcs")
-
-        # Skip definitions with too few atoms
-        if len(residue_definition.atoms) < len(res_atom_idcs):
-            return None
-
-        # Skip non-linking definitions with the wrong number of atoms
-        if residue_definition.linking_bond is None and len(
-            residue_definition.atoms,
-        ) != len(res_atom_idcs):
-            return None
-
-        # Get the map from the canonical names to the indices
-        try:
-            index_to_atomdef = {
-                i: residue_definition.name_to_atom[self.name[i]] for i in res_atom_idcs
-            }
-        except KeyError:
-            return None
-
-        matched_atoms = {atom.name for atom in index_to_atomdef.values()}
-
-        # Fail to match if any atoms in PDB file got matched to more than one name
-        if len(matched_atoms) != len(res_atom_idcs):
-            return None
-
-        # This assert should be guaranteed by the above
-        assert set(index_to_atomdef.keys()) == set(res_atom_idcs)
-
-        missing_atoms = [
-            atom for atom in residue_definition.atoms if atom.name not in matched_atoms
-        ]
-
-        # Match only if all the leaving atoms associated with each linking atom
-        # is either entirely present or entirely absent
-        missing_atom_names = {atom.name for atom in missing_atoms}
-        if any(not atom.leaving for atom in missing_atoms):
-            return None
-        elif (
-            (
-                missing_atom_names.issuperset(
-                    residue_definition.prior_bond_leaving_atoms,
-                )
-                or missing_atom_names.isdisjoint(
-                    residue_definition.prior_bond_leaving_atoms,
-                )
-            )
-            and (
-                missing_atom_names.issuperset(
-                    residue_definition.posterior_bond_leaving_atoms,
-                )
-                or missing_atom_names.isdisjoint(
-                    residue_definition.posterior_bond_leaving_atoms,
-                )
-            )
-            and (
-                missing_atom_names.issuperset(
-                    residue_definition.crosslink_leaving_atoms,
-                )
-                or missing_atom_names.isdisjoint(
-                    residue_definition.crosslink_leaving_atoms,
-                )
-            )
-        ):
-            return ResidueMatch(
-                index_to_atomdef=index_to_atomdef,
-                residue_definition=residue_definition,
-                missing_atoms={atom.name for atom in missing_atoms},
-            )
-        else:
-            return None
-
-    def are_alt_locs(self, i: int, j: int) -> bool:
-        if i == j:
-            raise ValueError(f"i and j are the same ({i})")
-        if max(i, j) - min(i, j) == 1:
-            return (
-                self.model[i],
-                self.name[i],
-                self.res_name[i],
-                self.chain_id[i],
-                self.res_seq[i],
-                self.i_code[i],
-            ) == (
-                self.model[j],
-                self.name[j],
-                self.res_name[j],
-                self.chain_id[j],
-                self.res_seq[j],
-                self.i_code[j],
-            )
-        else:
-            return self.are_alt_locs(i, i + 1) and self.are_alt_locs(i + 1, j)
