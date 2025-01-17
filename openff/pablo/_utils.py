@@ -125,6 +125,13 @@ def dec_hex(s: str) -> int:
         return parsed_as_hex - smallest_hex + largest_dec + 1
 
 
+def int_or_none(s: str) -> int | None:
+    if s == "":
+        return None
+    else:
+        return int(s)
+
+
 def cryst_to_box_vectors(
     a: float,
     b: float,

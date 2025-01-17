@@ -36,7 +36,7 @@ def _match_unknown_molecules(
     for pdb_index in indices:
         pdb_idx_to_mol_idx[pdb_index] = pdbmol.add_atom(
             atomic_number=elements.NUMBERS[data.element[pdb_index]],
-            formal_charge=data.charge[pdb_index],
+            formal_charge=data.charge[pdb_index] or 0,
             is_aromatic=False,
             stereochemistry=None,
             name=data.name[pdb_index],

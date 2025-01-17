@@ -7,7 +7,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Any, DefaultDict, Self
 
-from ._utils import __UNSET__, dec_hex, with_neighbours
+from ._utils import __UNSET__, dec_hex, int_or_none, with_neighbours
 from .exceptions import UnknownOrAmbiguousSerialInConectError
 from .residue import AtomDefinition, ResidueDefinition
 
@@ -184,7 +184,7 @@ class PdbData:
     occupancy: list[float] = field(default_factory=list)
     temp_factor: list[float] = field(default_factory=list)
     element: list[str] = field(default_factory=list)
-    charge: list[int] = field(default_factory=list)
+    charge: list[int | None] = field(default_factory=list)
     terminated: list[bool] = field(default_factory=list)
     serial_to_index: DefaultDict[int, list[int]] = field(
         default_factory=lambda: defaultdict(list),
@@ -224,7 +224,7 @@ class PdbData:
         self.occupancy[-1] = float(line[54:60])
         self.temp_factor[-1] = float(line[60:66])
         self.element[-1] = line[76:78].strip()
-        self.charge[-1] = int(line[78:80].strip() or 0)
+        self.charge[-1] = int_or_none(line[78:80].strip())
         self.terminated[-1] = False
         self.conects[-1] = set()
 
@@ -374,9 +374,9 @@ class PdbData:
         ):
             return None
 
-        # Check that charges match, but tolerate missing columns (zeros)
+        # Check that charges match, but tolerate missing columns
         if any(
-            self.charge[i] != 0 and self.charge[i] != atom.charge
+            self.charge[i] is not None and self.charge[i] != atom.charge
             for i, atom in index_to_atomdef.items()
         ):
             return None

@@ -142,7 +142,7 @@ class TestPdbData:
             occupancy=[1.00],
             temp_factor=[0.00],
             element=["H"],
-            charge=[0],
+            charge=[None],
             terminated=[False],
             serial_to_index=expected_serial_to_index,
             conects=[set()],
@@ -193,7 +193,7 @@ class TestPdbData:
             occupancy=[1.00, 0.99, 1.00, 1.00, 1.00, 1.00],
             temp_factor=[0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
             element=["H", "H", "O", "H", "H", "O"],
-            charge=[0, 0, 0, 0, 0, 0],
+            charge=[None, None, None, None, None, None],
             terminated=[False, False, False, True, True, True],
             serial_to_index=expected_serial_to_index,
             conects=[{2}, {2}, {0, 1}, {5}, {5}, {3, 4}],
@@ -290,7 +290,7 @@ class TestPdbData:
             description="",
             residue_name="UNK",
         )
-        charges = [0, 0]
+        charges: list[int | None] = [None, None]
         elements = ["", ""]
         assert (
             PdbData(
@@ -393,7 +393,7 @@ class TestPdbData:
             cys_data.subset_matches_residue(range(len(cys_def.atoms)), cys_def) is None
         )
 
-    def test_subset_matches_residue_tolerates_zero_charge_and_empty_element(self):
+    def test_subset_matches_residue_tolerates_none_charge_and_empty_element(self):
         resdef = ResidueDefinition(
             atoms=(AtomDefinition.with_defaults("H", "H", charge=1),),
             bonds=(),
@@ -402,7 +402,7 @@ class TestPdbData:
             description="",
             residue_name="HPL",
         )
-        data = PdbData(name=["H"], element=[""], charge=[0])
+        data = PdbData(name=["H"], element=[""], charge=[None])
         assert data.subset_matches_residue([0], resdef) is not None
 
     def test_subset_matches_residue_tolerates_wrong_case_element(self):
