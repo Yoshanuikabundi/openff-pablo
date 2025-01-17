@@ -48,6 +48,9 @@ minversion = "6.0"
 testpaths = [
   "openff/pablo/_tests",
 ]
+markers = [
+  "slow: mark the test to be skippable when fast results are needed", #  deselect with `-m "not slow"`
+]
 
 [tool.setuptools.packages.find]
 include = ["openff.*"]

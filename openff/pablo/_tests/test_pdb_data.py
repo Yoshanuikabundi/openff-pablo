@@ -416,3 +416,39 @@ class TestPdbData:
         )
         data = PdbData(name=["H"], element=["h"], charge=[1])
         assert data.subset_matches_residue([0], resdef) is not None
+
+    def test_get_residue_matches_loads_vicinal_disulfide(
+        self,
+        vicinal_disulfide_data: PdbData,
+        cys_def: ResidueDefinition,
+        cys_def_deprotonated_sidechain: ResidueDefinition,
+    ):
+        match1, match2, *excess_matches = vicinal_disulfide_data.get_residue_matches(
+            residue_database={"CYS": [cys_def, cys_def_deprotonated_sidechain]},
+            additional_substructures=[],
+        )
+        assert len(excess_matches) == 0
+        assert len(match1) == 1
+        assert len(match2) == 1
+        match1 = match1[0]
+        match2 = match2[0]
+
+        assert match1.crosslink is not None and match2.crosslink is not None
+        sg1, sg2 = match1.crosslink
+        assert match2.crosslink == (sg2, sg1)
+        assert vicinal_disulfide_data.name[sg1] == "SG"
+        assert vicinal_disulfide_data.name[sg2] == "SG"
+
+        assert match1.missing_atoms == {"HXT", "HG", "OXT"}
+        assert match2.missing_atoms == {"H2", "HG"}
+
+        assert match1.expect_posterior_bond
+        assert not match1.expect_prior_bond
+        assert match1.expect_crosslink
+
+        assert not match2.expect_posterior_bond
+        assert match2.expect_prior_bond
+        assert match2.expect_crosslink
+
+        assert match1.residue_definition is cys_def
+        assert match2.residue_definition is cys_def

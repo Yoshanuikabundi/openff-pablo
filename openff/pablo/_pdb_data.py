@@ -457,10 +457,6 @@ class PdbData:
 
             name_matches.append(residue_matches)
 
-        print(
-            f"{len(name_matches[79])} matches from names for {name_matches[79][0].residue_definition.residue_name}",
-        )
-
         # Check for polymer bonds
         prev_filtered_matches: list[ResidueMatch] = []
         linkage_matches: list[list[ResidueMatch]] = []
@@ -494,7 +490,6 @@ class PdbData:
                     if prior_bond_mismatched:
                         continue
 
-                    # assert any([]) == False
                     posterior_bond_mismatched = (
                         match.expect_posterior_bond != neighbours_support_posterior_bond
                     )
@@ -510,10 +505,6 @@ class PdbData:
 
             linkage_matches.append(this_filtered_matches)
             prev_filtered_matches = this_filtered_matches
-
-        print(
-            f"{len(linkage_matches[79])} matches from polymer bonds for {linkage_matches[79][0].residue_definition.residue_name}",
-        )
 
         # Check for crosslinks
         for residue_matches in linkage_matches:

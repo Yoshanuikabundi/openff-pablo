@@ -8,7 +8,13 @@ from openff.pablo.chem import DISULFIDE_BOND, PEPTIDE_BOND
 from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefinition
 
 
-@pytest.fixture(params=["data/5ap1_prepared.pdb", "data/193l_prepared.pdb"])
+@pytest.fixture(
+    params=[
+        "data/5ap1_prepared.pdb",
+        "data/193l_prepared.pdb",
+        "data/3cu9_vicinal_disulfide.pdb",
+    ],
+)
 def pdbfn(request: pytest.FixtureRequest) -> Path:
     return Path(resource_filename(__name__, request.param))
 
@@ -16,6 +22,13 @@ def pdbfn(request: pytest.FixtureRequest) -> Path:
 @pytest.fixture
 def hewl_data() -> PdbData:
     return PdbData.from_file(resource_filename(__name__, "data/193l_prepared.pdb"))
+
+
+@pytest.fixture
+def vicinal_disulfide_data() -> PdbData:
+    return PdbData.from_file(
+        resource_filename(__name__, "data/3cu9_vicinal_disulfide.pdb"),
+    )
 
 
 @pytest.fixture
