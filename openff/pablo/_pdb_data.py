@@ -507,6 +507,7 @@ class PdbData:
             prev_filtered_matches = this_filtered_matches
 
         # Check for crosslinks
+        # TODO: This could be simplified if we required crosslinking atoms not to have synonyms
         for residue_matches in linkage_matches:
             for match in residue_matches:
                 if match.crosslink is not None:
