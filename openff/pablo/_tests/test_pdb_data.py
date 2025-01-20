@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict
+from collections.abc import Iterable
 
 import pytest
 
@@ -30,6 +31,9 @@ class TestResidueMatch:
         with pytest.raises(ValueError):
             cys_match.set_crosslink(cys_match.canonical_atom_name_to_index["C"], 99)
 
+    def test_prototype_index_in_match(self, cys_match: ResidueMatch):
+        assert cys_match.prototype_index in cys_match.index_to_atomdef
+
     def test_set_crosslink_raises_on_atom1_from_other_residue(
         self,
         cys_match: ResidueMatch,
@@ -44,6 +48,37 @@ class TestResidueMatch:
     ):
         with pytest.raises(ValueError):
             cys_match.set_crosslink(cys_match.canonical_atom_name_to_index["SG"], 0)
+
+    @pytest.mark.parametrize(
+        "fixture_name, missing_atoms",
+        [
+            ("cys_match", []),
+            ("cys_match_no_leaving", ["OXT", "HXT", "H2", "HG"]),
+            ("cys_match_no_leaving_deprotonated_sidechain", ["OXT", "HXT", "H2"]),
+        ],
+    )
+    def test_missing_atoms(
+        self,
+        request: pytest.FixtureRequest,
+        fixture_name: str,
+        missing_atoms: Iterable[str],
+    ):
+        match: ResidueMatch = request.getfixturevalue(fixture_name)
+        assert match.missing_atoms == set(missing_atoms)
+
+    def test_missing_leaving_atoms(
+        self,
+        hoh_def: ResidueDefinition,
+    ):
+        match = ResidueMatch(
+            residue_definition=hoh_def,
+            crosslink=None,
+            index_to_atomdef={
+                i: atom for i, atom in enumerate(hoh_def.atoms) if atom.name != "O"
+            },
+        )
+        assert match.missing_atoms == {"O"}
+        assert match.missing_leaving_atoms == set()
 
     @pytest.mark.parametrize(
         "expect_prop_suffix",

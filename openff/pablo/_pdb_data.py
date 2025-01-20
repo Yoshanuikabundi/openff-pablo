@@ -20,6 +20,7 @@ class ResidueMatch:
     """PDB indices of each bonded atom"""
 
     def atom(self, identifier: int | str) -> AtomDefinition:
+        """Get an atom definition by name or PDB index"""
         if isinstance(identifier, int):
             return self.index_to_atomdef[identifier]
         elif isinstance(identifier, str):
@@ -28,6 +29,7 @@ class ResidueMatch:
             raise TypeError(f"unknown identifier type {type(identifier)}")
 
     def set_crosslink(self, atom1_idx: int, atom2_idx: int) -> None:
+        """Set a match for crosslinking"""
         if (
             self.residue_definition.crosslink is None
             or atom1_idx not in self.res_atom_idcs
