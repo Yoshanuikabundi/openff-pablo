@@ -115,7 +115,6 @@ def test_add_to_molecule_when_empty(cys_data: PdbData, cys_match: ResidueMatch):
         molecules=molecules,
         this_molecule=this_molecule,
         residue_match=cys_match,
-        res_atom_idcs=tuple(cys_match.res_atom_idcs),
         use_canonical_names=False,
     )
     assert mol_out is this_molecule

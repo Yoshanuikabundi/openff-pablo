@@ -291,7 +291,6 @@ def topology_from_pdb(
             this_molecule = _add_to_molecule(
                 molecules,
                 this_molecule,
-                res_atom_idcs,
                 chemical_data,
                 data,
                 use_canonical_names,
@@ -382,7 +381,6 @@ def _set_box_vectors(topology: Topology, data: PdbData):
 def _add_to_molecule(
     molecules: MutableSequence[Molecule],
     this_molecule: Molecule,
-    res_atom_idcs: tuple[int, ...],
     residue_match: ResidueMatch,
     data: PdbData,
     use_canonical_names: bool,
@@ -406,7 +404,7 @@ def _add_to_molecule(
         "pdb_idx_to_mol_atom_idx",
         {},
     )
-    for pdb_index in res_atom_idcs:
+    for pdb_index in sorted(residue_match.res_atom_idcs):
         atom_def = residue_match.atom(pdb_index)
 
         if data.alt_loc[pdb_index] != "":
