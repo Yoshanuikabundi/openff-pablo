@@ -36,7 +36,7 @@ def _match_unknown_molecules(
     for pdb_index in indices:
         pdb_idx_to_mol_idx[pdb_index] = pdbmol.add_atom(
             atomic_number=elements.NUMBERS[data.element[pdb_index]],
-            formal_charge=data.charge[pdb_index],
+            formal_charge=data.charge[pdb_index] or 0,
             is_aromatic=False,
             stereochemistry=None,
             name=data.name[pdb_index],
@@ -49,6 +49,8 @@ def _match_unknown_molecules(
                 "insertion_code": data.i_code[pdb_index],
                 "chain_id": data.chain_id[pdb_index],
                 "atom_serial": data.serial[pdb_index],
+                "b_factor": str(data.temp_factor[pdb_index]),
+                "occupancy": str(data.occupancy[pdb_index]),
             },
         )
         for conect_idx in data.conects[pdb_index]:
@@ -163,6 +165,8 @@ def topology_from_pdb(
         If ``True``, stereochemistry will be set according to the structure of
         the PDB file. This takes considerable time. If ``False``, leave stereo
         as set in the ``ResidueDefinition``.
+    verbose_errors
+        If ``True``, give more detailed error reports. These can get quite long.
 
     Notes
     -----
@@ -197,15 +201,18 @@ def topology_from_pdb(
         match the index of the atom within the topology.
     ``"used_synonym"``
         The name of the atom that was found in the PDB file. By default,
-        `atom.name` is set to this.
+        `atom.name` is set to this. This value is not set for atoms matched via
+        ``unknown_molecules``.
     ``"canonical_name"``
         The canonical name of the atom in the residue database. `atom.name` can
-        be set to this with the `use_canonical_names` argument.
+        be set to this with the `use_canonical_names` argument. This value is
+        not set for atoms matched via ``unknown_molecules``.
     ``"atom_serial"``
         The serial number of the atom, found in the second column of the PDB
         file. Not guaranteed to be unique.
     ``"matched_residue_description"``
-        The residue description found in the residue database.
+        The residue description found in the residue database. This value is not
+        set for atoms matched via ``unknown_molecules``.
     ``"b_factor"``
         The temperature b-factor for the atom.
     ``"occupancy"``
@@ -281,10 +288,9 @@ def topology_from_pdb(
             else:
                 molecules.append(this_molecule)
         elif isinstance(chemical_data, ResidueMatch):
-            this_molecule = add_to_molecule(
+            this_molecule = _add_to_molecule(
                 molecules,
                 this_molecule,
-                res_atom_idcs,
                 chemical_data,
                 data,
                 use_canonical_names,
@@ -326,14 +332,14 @@ def topology_from_pdb(
             assign_stereochemistry_from_3d(molecule)
 
     if not ignore_unknown_CONECT_records:
-        check_all_conects(topology, data)
+        _check_all_conects(topology, data)
 
-    set_box_vectors(topology, data)
+    _set_box_vectors(topology, data)
 
     return topology
 
 
-def check_all_conects(topology: Topology, data: PdbData):
+def _check_all_conects(topology: Topology, data: PdbData):
     all_bonds: set[tuple[int, int]] = {
         sort_tuple((topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)))
         for bond in topology.bonds
@@ -353,7 +359,7 @@ def check_all_conects(topology: Topology, data: PdbData):
         )
 
 
-def set_box_vectors(topology: Topology, data: PdbData):
+def _set_box_vectors(topology: Topology, data: PdbData):
     if (
         data.cryst1_a is not None
         and data.cryst1_b is not None
@@ -372,10 +378,9 @@ def set_box_vectors(topology: Topology, data: PdbData):
         )
 
 
-def add_to_molecule(
+def _add_to_molecule(
     molecules: MutableSequence[Molecule],
     this_molecule: Molecule,
-    res_atom_idcs: tuple[int, ...],
     residue_match: ResidueMatch,
     data: PdbData,
     use_canonical_names: bool,
@@ -389,9 +394,9 @@ def add_to_molecule(
             if this_molecule.atom(i).metadata["canonical_name"] == linking_atom_name:
                 linking_atom_idx = i
                 break
-        assert (
-            linking_atom_idx is not None
-        ), "Expecting a prior bond, but no linking atom found"
+        assert linking_atom_idx is not None, (
+            "Expecting a prior bond, but no linking atom found"
+        )
 
     # Add the residue to the current molecule
     atom_name_to_mol_idx: dict[str, int] = {}
@@ -399,7 +404,7 @@ def add_to_molecule(
         "pdb_idx_to_mol_atom_idx",
         {},
     )
-    for pdb_index in res_atom_idcs:
+    for pdb_index in sorted(residue_match.res_atom_idcs):
         atom_def = residue_match.atom(pdb_index)
 
         if data.alt_loc[pdb_index] != "":
@@ -444,9 +449,9 @@ def add_to_molecule(
 
     if linking_atom_idx is not None:
         linking_bond = residue_match.residue_definition.linking_bond
-        assert (
-            linking_bond is not None
-        ), "linking_atom_idx is only set when linking_atom_idx is None"
+        assert linking_bond is not None, (
+            "linking_atom_idx is only set when linking_atom_idx is None"
+        )
         this_molecule._add_bond(
             atom1=linking_atom_idx,
             atom2=atom_name_to_mol_idx[linking_bond.atom2],
