@@ -3,16 +3,17 @@ Classes for defining custom residues.
 """
 
 import dataclasses
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Collection, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Literal, Self
-from collections.abc import Iterable
 
 from openff.toolkit import Molecule
 from openff.units import elements, unit
+
+from openff.pablo._utils import unwrap
 
 __all__ = [
     "AtomDefinition",
@@ -44,7 +45,15 @@ class AtomDefinition:
     symbol: str
     """The elemental symbol for this atom"""
     leaving: bool
-    """Whether this atom is absent when some bond is formed between this residue and another"""
+    """
+    Whether this atom is absent when a bond is formed between two residues.
+
+    Atoms marked as leaving are expected to be missing from a PDB file when a
+    bond is formed between this residue and another to satisfy the valence
+    change for the new bond. See also
+    :py:data:`openff.pablo.residue.ResidueDefinition.linking_bond` and
+    :py:data:`openff.pablo.residue.ResidueDefinition.crosslink`.
+    """
     charge: int
     """The formal charge of this atom"""
     aromatic: bool
@@ -94,11 +103,6 @@ class BondDefinition:
     def flipped(self) -> Self:
         """The same bond, but with the atoms in the opposite order"""
         return dataclasses.replace(self, atom1=self.atom2, atom2=self.atom1)
-
-    def sorted(self) -> Self:
-        """The same bond, but with the atoms in sorted order"""
-        sorted_atoms = sorted([self.atom1, self.atom2])
-        return dataclasses.replace(self, atom1=sorted_atoms[0], atom2=sorted_atoms[1])
 
     @classmethod
     def with_defaults(
@@ -187,7 +191,11 @@ class ResidueDefinition:
     accounted for via the removal of leaving atoms.
     """
     atoms: tuple[AtomDefinition, ...]
-    """The atom definitions that make up this residue"""
+    """The atom definitions that make up this residue.
+
+    Atoms may be marked as `leaving` only if they are associated with a
+    linking or crosslinking bond; see the API documentation for those fields.
+    All atoms must have unique canonical names."""
     bonds: tuple[BondDefinition, ...]
     """The bond definitions that make up this residue"""
 
@@ -227,12 +235,75 @@ class ResidueDefinition:
     @classmethod
     def from_molecule(
         cls,
-        name: str,
         molecule: Molecule,
+        residue_name: str | None = None,
         linking_bond: BondDefinition | None = None,
         crosslink: BondDefinition | None = None,
-        description: str = "",
+        description: str | None = None,
     ) -> Self:
+        """
+        Create a ``ResidueDefinition`` from an :py:cls:`openff.toolkit.Molecule`
+
+        Parameters
+        ----------
+        molecule
+            The ``Molecule`` object. Canonical names are taken from the atom
+            names in this object. Leaving atoms are identified from the atom
+            metadata; atom's whose metadata includes a truthy value for the key
+            ``"leaving_atom"`` are marked as leaving atoms. Synonyms are never
+            set.
+        residue_name
+            The 3-letter code used to identify the residue in a PDB file. If
+            ``None``, takes name from atom's ``"residue_name"`` metadata entry,
+            or raises ``ValueError`` if they do not all agree. See also
+            :py:data:`openff.pablo.ResidueDefinition.residue_name`
+        linking_bond
+            Residue linking bond. May be taken from ``molecule``
+            ``"linking_bond"`` property if ``None``. See
+            :py:data:`openff.pablo.ResidueDefinition.linking_bond`
+        crosslink
+            Residue crosslink. May be taken from ``molecule`` ``"crosslink"``
+            property if ``None``. See
+            :py:data:`openff.pablo.ResidueDefinition.crosslink`
+        description
+            An optional string describing the residue. Taken from ``molecule``
+            ``"description"`` property if ``None``. See
+            :py:data:`openff.pablo.ResidueDefinition.description`
+        """
+        if residue_name is None:
+            atom_residue_names = {
+                atom.metadata.get("residue_name", None) for atom in molecule.atoms
+            }
+            if len(atom_residue_names) == 1:
+                atom_residue_name = unwrap(atom_residue_names)
+                if isinstance(atom_residue_name, str):
+                    residue_name = atom_residue_name
+                else:
+                    raise ValueError(
+                        "residue_name None but atoms' residue names are not strings",
+                    )
+            else:
+                raise ValueError(
+                    "residue_name None and atoms do not agree on residue name",
+                )
+
+        if crosslink is None:
+            molecule_crosslink = molecule.properties.get("crosslink")
+            if isinstance(molecule_crosslink, BondDefinition):
+                crosslink = molecule_crosslink
+
+        if linking_bond is None:
+            molecule_linking_bond = molecule.properties.get("crosslink")
+            if isinstance(molecule_linking_bond, BondDefinition):
+                linking_bond = molecule_linking_bond
+
+        if description is None:
+            molecule_description = molecule.properties.get("description")
+            if isinstance(molecule_description, str):
+                description = molecule_description
+            else:
+                description = ""
+
         atoms: list[AtomDefinition] = []
         for atom in molecule.atoms:
             atoms.append(
@@ -259,7 +330,7 @@ class ResidueDefinition:
             )
 
         return cls(
-            residue_name=name,
+            residue_name=residue_name,
             description=description,
             linking_bond=linking_bond,
             crosslink=crosslink,
@@ -270,18 +341,41 @@ class ResidueDefinition:
     @classmethod
     def from_capped_molecule(
         cls,
-        name: str,
         molecule: Molecule,
+        residue_name: str,
         leaving_atom_indices: Collection[int],
         linking_bond: BondDefinition,
         crosslink: BondDefinition | None = None,
-        description: str = "",
+        description: str | None = None,
     ) -> Self:
+        """
+        Create a linking ``ResidueDefinition`` from an :py:cls:`openff.toolkit.Molecule`
+
+        Parameters
+        ----------
+        residue_name
+            The 3-letter code used to identify the residue in a PDB file. See
+            :py:data:`openff.pablo.ResidueDefinition.residue_name`
+        molecule
+            The ``Molecule`` object. Canonical names are taken from the atom
+            names in this object. Synonyms are never set.
+        leaving_atom_indices
+            Indices of atoms within the ``molecule`` argument that should be
+            marked as leaving atoms. See :py:data:`openff.pablo.AtomDefinition.leaving`
+        linking_bond
+            The bond linking this residue to its neighbours in a polymer. See
+            :py:data:`openff.pablo.ResidueDefinition.linking_bond`
+        crosslink
+            See :py:data:`openff.pablo.ResidueDefinition.crosslink`
+        description
+            An optional string describing the residue. See
+            :py:data:`openff.pablo.ResidueDefinition.description`
+        """
         molecule = deepcopy(molecule)
         for i in leaving_atom_indices:
             molecule.atom(i).metadata["leaving_atom"] = True
         return cls.from_molecule(
-            name=name,
+            residue_name=residue_name,
             molecule=molecule,
             linking_bond=linking_bond,
             crosslink=crosslink,
@@ -291,26 +385,66 @@ class ResidueDefinition:
     @classmethod
     def from_smiles(
         cls,
-        name: str,
         mapped_smiles: str,
         atom_names: Mapping[int, str],
+        residue_name: str,
         leaving_atoms: Collection[int] = (),
         linking_bond: BondDefinition | None = None,
         crosslink: BondDefinition | None = None,
-        description: str = "",
+        description: str | None = None,
     ) -> Self:
-        molecule = Molecule.from_mapped_smiles(mapped_smiles)
-        leaving_atom_indices = set(leaving_atoms)
-        for i, atom in enumerate(molecule.atoms, start=1):
+        """
+        Create a ``ResidueDefinition`` from a mapped SMILES string.
+
+        Parameters
+        ----------
+        residue_name
+            The 3-letter code used to identify the residue in a PDB file. See
+            :py:data:`openff.pablo.ResidueDefinition.residue_name`
+        mapped_smiles
+            The SMILES string. All atoms must be explicitly included with
+            contiguous mapping numbers starting at 1.
+        atom_names
+            Mapping from SMILES string mapping numbers to the canonical atom
+            name. Note that this refers to numbers in the actual SMILES string,
+            and so keys should be contiguous integers starting at 1. Atom names
+            must be unique.
+        leaving_atoms
+            SMILES string mapping numbers for atoms that should be marked as
+            leaving atoms.
+        linking_bond
+            The bond linking this residue to its neighbours in a polymer. See
+            :py:data:`openff.pablo.ResidueDefinition.linking_bond`
+        crosslink
+            See :py:data:`openff.pablo.ResidueDefinition.crosslink`
+        description
+            An optional string describing the residue. See
+            :py:data:`openff.pablo.ResidueDefinition.description`
+        """
+        molecule = Molecule.from_mapped_smiles(
+            mapped_smiles,
+            allow_undefined_stereo=True,
+        )
+        leaving_atom_indices = {i - 1 for i in leaving_atoms}
+        index_to_atom_name = {i - 1: name for i, name in atom_names.items()}
+
+        if len(index_to_atom_name) != molecule.n_atoms:
+            raise ValueError("Should be an atom name for each atom in SMILES string")
+        if set(index_to_atom_name.keys()) != set(range(molecule.n_atoms)):
+            raise ValueError(
+                "Keys of atom_names should be contiguous integers starting at 1",
+            )
+
+        for i, atom in enumerate(molecule.atoms):
             if i in leaving_atom_indices:
                 atom.metadata["leaving_atom"] = True
-            atom.name = atom_names[i]
+            atom.name = index_to_atom_name[i]
 
         return cls.from_molecule(
-            name=name,
+            residue_name=residue_name,
             molecule=molecule,
             linking_bond=linking_bond,
-            description=description,
+            description=mapped_smiles if description is None else description,
             crosslink=crosslink,
         )
 
@@ -342,6 +476,8 @@ class ResidueDefinition:
         molecule.properties.update(
             {
                 "linking_bond": self.linking_bond,
+                "crosslink": self.crosslink,
+                "description": self.description,
             },
         )
 
@@ -349,7 +485,7 @@ class ResidueDefinition:
 
     @cached_property
     def name_to_atom(self) -> dict[str, AtomDefinition]:
-        """Map from each atoms' name and synonyms to the value of a field."""
+        """Map from each atoms' name and synonyms to the atom definition."""
         mapping = {atom.name: atom for atom in self.atoms}
         canonical_names = set(mapping)
         for atom in self.atoms:

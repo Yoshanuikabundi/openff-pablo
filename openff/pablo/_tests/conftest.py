@@ -147,6 +147,29 @@ def hoh_def() -> ResidueDefinition:
 
 
 @pytest.fixture
+def hoh_def_with_synonyms() -> ResidueDefinition:
+    atoms = (
+        AtomDefinition.with_defaults(name="H1", symbol="H", synonyms=["HA"]),
+        AtomDefinition.with_defaults(name="H2", symbol="H", synonyms=["HB"]),
+        AtomDefinition.with_defaults(name="O", symbol="O", synonyms=["O1"]),
+    )
+
+    bonds = (
+        BondDefinition.with_defaults("O", "H2"),
+        BondDefinition.with_defaults("O", "H1"),
+    )
+
+    return ResidueDefinition(
+        atoms=atoms,
+        bonds=bonds,
+        crosslink=None,
+        linking_bond=None,
+        description="water",
+        residue_name="HOH",
+    )
+
+
+@pytest.fixture
 def cys_match(cys_def: ResidueDefinition) -> ResidueMatch:
     return ResidueMatch(
         residue_definition=cys_def,
