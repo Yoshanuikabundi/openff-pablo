@@ -1,11 +1,10 @@
-from collections import defaultdict
-from pathlib import Path
-from typing import DefaultDict
 from collections.abc import Iterable
+from pathlib import Path
 
 import pytest
 
 from openff.pablo._pdb_data import PdbData, ResidueMatch
+from openff.pablo._utils import default_dict
 from openff.pablo.exceptions import UnknownOrAmbiguousSerialInConectError
 from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefinition
 
@@ -160,8 +159,6 @@ class TestPdbData:
             "ATOM     16  HD2 LYS A   1      -1.806   9.969   9.991  1.00  0.00           H",
         )
 
-        expected_serial_to_index: DefaultDict[int, list[int]] = defaultdict(list)
-        expected_serial_to_index.update({16: [0]})
         assert data == PdbData(
             model=[None],
             serial=[16],
@@ -179,7 +176,7 @@ class TestPdbData:
             element=["H"],
             charge=[None],
             terminated=[False],
-            serial_to_index=expected_serial_to_index,
+            serial_to_index=default_dict(list, {16: [0]}),
             conects=[set()],
             cryst1_a=None,
             cryst1_b=None,
@@ -209,10 +206,7 @@ class TestPdbData:
             "ENDMDL",
         ]
         data = PdbData.parse_pdb(pdblines)
-        expected_serial_to_index: DefaultDict[int, list[int]] = defaultdict(list)
-        expected_serial_to_index.update(
-            {1: [0], 2: [1], 3: [2], 4: [3], 5: [4], 6: [5]},
-        )
+
         assert data == PdbData(
             model=[1, 1, 1, 1, 1, 1],
             serial=[1, 2, 3, 4, 5, 6],
@@ -230,7 +224,10 @@ class TestPdbData:
             element=["H", "H", "O", "H", "H", "O"],
             charge=[None, None, None, None, None, None],
             terminated=[False, False, False, True, True, True],
-            serial_to_index=expected_serial_to_index,
+            serial_to_index=default_dict(
+                list,
+                {1: [0], 2: [1], 3: [2], 4: [3], 5: [4], 6: [5]},
+            ),
             conects=[{2}, {2}, {0, 1}, {5}, {5}, {3, 4}],
             cryst1_a=10.0,
             cryst1_b=10.0,

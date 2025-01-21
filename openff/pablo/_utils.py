@@ -1,5 +1,13 @@
+from collections import defaultdict
 from collections.abc import Iterable, Iterator
-from typing import TypeAlias, TypeVar, TypeVarTuple, no_type_check
+from typing import (
+    DefaultDict,
+    TypeAlias,
+    TypeVar,
+    TypeVarTuple,
+    no_type_check,
+)
+from collections.abc import Callable, Mapping
 
 from openff.toolkit.topology._mm_molecule import _SimpleMolecule
 from openff.toolkit.topology.molecule import MoleculeLike
@@ -18,6 +26,7 @@ __all__ = [
 
 T = TypeVar("T")
 U = TypeVar("U")
+V = TypeVar("V")
 Ts = TypeVarTuple("Ts")
 
 CIFValue: TypeAlias = str | float | int
@@ -25,6 +34,15 @@ CIFValue: TypeAlias = str | float | int
 
 class __UNSET__:
     pass
+
+
+def default_dict(
+    default_factory: Callable[[], T],
+    map: Mapping[U, V] = {},
+) -> DefaultDict[U, T | V]:
+    dd: DefaultDict[U, T | V] = defaultdict(default_factory)
+    dd.update(map)
+    return dd
 
 
 def unwrap(container: Iterable[T], msg: str = "") -> T:

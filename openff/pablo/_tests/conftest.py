@@ -13,6 +13,7 @@ from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefiniti
         "data/5ap1_prepared.pdb",
         "data/193l_prepared.pdb",
         "data/3cu9_vicinal_disulfide.pdb",
+        "data/e2_7nel.pdb",
     ],
 )
 def pdbfn(request: pytest.FixtureRequest) -> Path:
@@ -51,6 +52,11 @@ def cys_data() -> PdbData:
             "ATOM     14  HXT CYS     2       2.294   1.239   0.272  1.00  0.00           H  ",
         ],
     )
+
+
+@pytest.fixture
+def e2_data() -> PdbData:
+    return PdbData.from_file(resource_filename(__name__, "data/e2_7nel.pdb"))
 
 
 @pytest.fixture
