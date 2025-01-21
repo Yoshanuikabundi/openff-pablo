@@ -17,7 +17,7 @@ maintainers = [
   { name = "Josh Mitchell", email = "josh.mitchell@openforcefield.org" },
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
 ]
 keywords = [

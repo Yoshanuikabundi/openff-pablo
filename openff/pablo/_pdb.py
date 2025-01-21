@@ -394,9 +394,9 @@ def _add_to_molecule(
             if this_molecule.atom(i).metadata["canonical_name"] == linking_atom_name:
                 linking_atom_idx = i
                 break
-        assert (
-            linking_atom_idx is not None
-        ), "Expecting a prior bond, but no linking atom found"
+        assert linking_atom_idx is not None, (
+            "Expecting a prior bond, but no linking atom found"
+        )
 
     # Add the residue to the current molecule
     atom_name_to_mol_idx: dict[str, int] = {}
@@ -449,9 +449,9 @@ def _add_to_molecule(
 
     if linking_atom_idx is not None:
         linking_bond = residue_match.residue_definition.linking_bond
-        assert (
-            linking_bond is not None
-        ), "linking_atom_idx is only set when linking_atom_idx is None"
+        assert linking_bond is not None, (
+            "linking_atom_idx is only set when linking_atom_idx is None"
+        )
         this_molecule._add_bond(
             atom1=linking_atom_idx,
             atom2=atom_name_to_mol_idx[linking_bond.atom2],
