@@ -136,7 +136,7 @@ class ResidueDefinition:
     """Description of how this residue may bond to its neighbours in a polymer
 
     If the residue is only found as a monomer, ``None``. Otherwise, a
-    :py:cls:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
+    :py:class:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
     canonical atom names of the atoms that form the linking bond. ``atom1`` is
     the name of the atom in the residue preceding the bond, and ``atom2`` is in
     the residue after the bond. Any atoms that the bond between residues
@@ -150,11 +150,11 @@ class ResidueDefinition:
     - There is no TER record between the residues in the PDB file
     - The two residues have identical ``linking_bond`` attributes
     - All leaving atoms associated with ``linking_bond.atom1`` are absent in
-    the first encountered residue, and all leaving atoms associated with
-    ``linking_bond.atom2`` are absent in the latter residue. Leaving atoms
-    are those that have the ``AtomDefinition.leaving`` attribute set to
-    ``True``. A leaving atom is associated with atom `a` if it is bonded to
-    `a`, or it is bonded to an atom associated with `a`.
+      the first encountered residue, and all leaving atoms associated with
+      ``linking_bond.atom2`` are absent in the latter residue. Leaving atoms
+      are those that have the ``AtomDefinition.leaving`` attribute set to
+      ``True``. A leaving atom is associated with atom `a` if it is bonded to
+      `a`, or it is bonded to an atom associated with `a`.
     - There is at least one leaving atom associated with each linking atom
 
     The charge of linking atoms is not modified; any change in valence is
@@ -169,7 +169,7 @@ class ResidueDefinition:
     within a residue; use a bond or residue variant instead.
 
     If the residue does not form cross links, ``None``. Otherwise, a
-    :py:cls:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
+    :py:class:`BondDefinition`. The ``atom1`` and ``atom2`` attributes give the
     canonical atom names of the atoms that form the crosslink. ``atom1`` is
     the name of the atom in this residue, and ``atom2`` is in the other residue.
     Any atoms that the bond between residues replaces should be marked as
@@ -179,12 +179,12 @@ class ResidueDefinition:
     below are true:
 
     - The two residues' ``crosslink`` attributes are identical except that their
-    atom names are reversed
+      atom names are reversed
     - All leaving atoms associated with each residues' ``crosslink.atom1``
-    attribute are absent in that residue. Leaving atoms are those that have the
-    ``AtomDefinition.leaving`` attribute set to ``True``. A leaving atom is
-    associated with atom `a` if it is bonded to `a`, or it is bonded to an atom
-    associated with `a`.
+      attribute are absent in that residue. Leaving atoms are those that have
+      the ``AtomDefinition.leaving`` attribute set to ``True``. A leaving atom
+      is associated with atom `a` if it is bonded to `a`, or it is bonded to an
+      atom associated with `a`.
     - There is at least one leaving atom associated with each cross-linking atom
 
     The charge of linking atoms is not modified; any change in valence is
