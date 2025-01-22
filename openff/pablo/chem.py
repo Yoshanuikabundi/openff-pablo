@@ -1,4 +1,13 @@
+"""
+Chemical information for re-use across residue databases.
+"""
+
 from openff.pablo.residue import BondDefinition
+
+__all__ = [
+    "DISULFIDE_BOND",
+    "PEPTIDE_BOND",
+]
 
 DISULFIDE_BOND = BondDefinition(
     atom1="SG",

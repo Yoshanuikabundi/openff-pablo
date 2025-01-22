@@ -11,6 +11,11 @@ from ._utils import __UNSET__, dec_hex, int_or_none, with_neighbours
 from .exceptions import UnknownOrAmbiguousSerialInConectError
 from .residue import AtomDefinition, ResidueDefinition
 
+__all__ = [
+    "ResidueMatch",
+    "PdbData",
+]
+
 
 @dataclass(frozen=True)
 class ResidueMatch:

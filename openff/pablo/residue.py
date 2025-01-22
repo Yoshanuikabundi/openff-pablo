@@ -154,7 +154,7 @@ class ResidueDefinition:
       ``linking_bond.atom2`` are absent in the latter residue. Leaving atoms
       are those that have the ``AtomDefinition.leaving`` attribute set to
       ``True``. A leaving atom is associated with atom `a` if it is bonded to
-      `a`, or it is bonded to an atom associated with `a`.
+      `a`, or it is bonded to a leaving atom associated with `a`.
     - There is at least one leaving atom associated with each linking atom
 
     The charge of linking atoms is not modified; any change in valence is
@@ -183,8 +183,8 @@ class ResidueDefinition:
     - All leaving atoms associated with each residues' ``crosslink.atom1``
       attribute are absent in that residue. Leaving atoms are those that have
       the ``AtomDefinition.leaving`` attribute set to ``True``. A leaving atom
-      is associated with atom `a` if it is bonded to `a`, or it is bonded to an
-      atom associated with `a`.
+      is associated with atom `a` if it is bonded to `a`, or it is bonded to a
+      leaving atom associated with `a`.
     - There is at least one leaving atom associated with each cross-linking atom
 
     The charge of linking atoms is not modified; any change in valence is
@@ -242,7 +242,7 @@ class ResidueDefinition:
         description: str | None = None,
     ) -> Self:
         """
-        Create a ``ResidueDefinition`` from an :py:cls:`openff.toolkit.Molecule`
+        Create a ``ResidueDefinition`` from an :py:class:`openff.toolkit.Molecule`
 
         Parameters
         ----------
@@ -349,7 +349,7 @@ class ResidueDefinition:
         description: str | None = None,
     ) -> Self:
         """
-        Create a linking ``ResidueDefinition`` from an :py:cls:`openff.toolkit.Molecule`
+        Create a linking ``ResidueDefinition`` from an :py:class:`openff.toolkit.Molecule`
 
         Parameters
         ----------

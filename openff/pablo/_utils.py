@@ -1,5 +1,5 @@
 from collections import defaultdict
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from typing import (
     DefaultDict,
     TypeAlias,
@@ -7,7 +7,6 @@ from typing import (
     TypeVarTuple,
     no_type_check,
 )
-from collections.abc import Callable, Mapping
 
 from openff.toolkit.topology._mm_molecule import _SimpleMolecule
 from openff.toolkit.topology.molecule import MoleculeLike
@@ -16,11 +15,16 @@ from openff.units import unit
 from pint import Quantity
 
 __all__ = [
+    "default_dict",
     "unwrap",
+    "sort_tuple",
     "flatten",
+    "with_neighbours",
     "float_or_unknown",
     "dec_hex",
+    "int_or_none",
     "cryst_to_box_vectors",
+    "assign_stereochemistry_from_3d",
     "__UNSET__",
 ]
 
