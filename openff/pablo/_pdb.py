@@ -497,7 +497,7 @@ def _add_to_molecule(
                 for old_idx, atom in enumerate(this_molecule.atoms):
                     old_to_new[old_idx] = other_molecule._add_atom(
                         atomic_number=atom.atomic_number,
-                        formal_charge=atom.formal_charge.m,
+                        formal_charge=atom.formal_charge.m,  # type:ignore
                         is_aromatic=atom.is_aromatic,
                         stereochemistry=atom.stereochemistry,
                         name=atom.name,
