@@ -407,10 +407,6 @@ def _add_to_molecule(
     for pdb_index in sorted(residue_match.res_atom_idcs):
         atom_def = residue_match.atom(pdb_index)
 
-        if data.alt_loc[pdb_index] != "":
-            # TODO: Support altlocs (probably in PdbData, maybe PdbData.residues()?)
-            raise ValueError("altloc not yet supported")
-
         mol_atom_idx = this_molecule._add_atom(
             atomic_number=elements.NUMBERS[atom_def.symbol],
             formal_charge=atom_def.charge,
