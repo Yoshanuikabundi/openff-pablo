@@ -11,7 +11,7 @@ from ..residue import (
     AtomDefinition,
     BondDefinition,
     ResidueDefinition,
-    _defer_residue_definition_validation,
+    _skip_residue_definition_validation,
 )
 
 __all__ = [
@@ -65,10 +65,18 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         ] = [dict(d) for d in patches]
 
         for file in path.glob("*.cif"):
-            self._add_definition_from_str(file.read_text())
+            try:
+                self._add_definition_from_str(file.read_text())
+            except Exception:
+                # If adding a file fails, skip it - we want an error at runtime, not importtime
+                pass
 
         for resname in set(preload) - set(self._definitions):
-            self[resname]
+            try:
+                self[resname]
+            except Exception:
+                # If a preload fails, skip it - we want an error at runtime, not importtime
+                pass
 
     def __repr__(self):
         return (
@@ -95,7 +103,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         self,
         residue_definition: ResidueDefinition,
     ) -> list[ResidueDefinition]:
-        with _defer_residue_definition_validation():
+        with _skip_residue_definition_validation():
             definitions: list[ResidueDefinition] = [residue_definition]
             for patch_dict in self._patches:
                 patched_definitions: list[ResidueDefinition] = []
@@ -214,7 +222,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             else:
                 bonds = []
 
-            with _defer_residue_definition_validation():
+            with _skip_residue_definition_validation():
                 residue_definition = ResidueDefinition(
                     residue_name=residueName,
                     description=residue_description,

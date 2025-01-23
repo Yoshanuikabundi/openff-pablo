@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Any, DefaultDict, Self
 
 from ._utils import __UNSET__, dec_hex, int_or_none, with_neighbours
-from .exceptions import UnknownOrAmbiguousSerialInConectError
+from .exceptions import (
+    NoMatchingResidueDefinitionError,
+    UnknownOrAmbiguousSerialInConectError,
+)
 from .residue import AtomDefinition, ResidueDefinition
 
 __all__ = [
@@ -462,7 +465,21 @@ class PdbData:
                     if match is not None:
                         residue_matches.append(match)
 
+            if len(residue_matches) == 0:
+                raise NoMatchingResidueDefinitionError(
+                    res_atom_idcs,
+                    self,
+                    unknown_molecules=[],
+                    additional_substructures=additional_substructures,
+                    residue_database=residue_database,
+                    verbose_errors=True,
+                )
+
             name_matches.append(residue_matches)
+
+        print(
+            f"{[[match.residue_definition.description for match in matches] for matches in name_matches]=}",
+        )
 
         # Check for polymer bonds
         prev_filtered_matches: list[ResidueMatch] = []
@@ -512,6 +529,10 @@ class PdbData:
 
             linkage_matches.append(this_filtered_matches)
             prev_filtered_matches = this_filtered_matches
+
+        print(
+            f"{[[match.residue_definition.description for match in matches] for matches in linkage_matches]=}",
+        )
 
         # Check for crosslinks
         # TODO: This could be simplified if we required crosslinking atoms not to have synonyms
