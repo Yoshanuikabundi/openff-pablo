@@ -104,13 +104,13 @@ def test_assign_stereochemistry_from_3d_bonds():
     cis_mol.generate_conformers(n_conformers=1)
     trans_mol.generate_conformers(n_conformers=1)
 
-    undef_mol.add_conformer(cis_mol.conformers[0])  # type:ignore[index]
+    undef_mol.add_conformer(cis_mol.conformers[0])  # type:ignore
     assign_stereochemistry_from_3d(undef_mol)
     assert "Z" in [bond.stereochemistry for bond in undef_mol.bonds]
 
     undef_mol.generate_conformers(n_conformers=0)
 
-    undef_mol.add_conformer(trans_mol.conformers[0])  # type:ignore[index]
+    undef_mol.add_conformer(trans_mol.conformers[0])  # type:ignore
     assign_stereochemistry_from_3d(undef_mol)
     assert "E" in [bond.stereochemistry for bond in undef_mol.bonds]
 
@@ -127,12 +127,15 @@ def test_assign_stereochemistry_from_3d_atoms():
     r_mol.generate_conformers(n_conformers=1)
     s_mol.generate_conformers(n_conformers=1)
 
-    undef_mol.add_conformer(r_mol.conformers[0])  # type:ignore[index]
+    assert r_mol.conformers is not None
+    assert s_mol.conformers is not None
+
+    undef_mol.add_conformer(r_mol.conformers[0])
     assign_stereochemistry_from_3d(undef_mol)
     assert undef_mol.atom(0).stereochemistry == "R"
 
     undef_mol.generate_conformers(n_conformers=0)
 
-    undef_mol.add_conformer(s_mol.conformers[0])  # type:ignore[index]
+    undef_mol.add_conformer(s_mol.conformers[0])
     assign_stereochemistry_from_3d(undef_mol)
     assert undef_mol.atom(0).stereochemistry == "S"
