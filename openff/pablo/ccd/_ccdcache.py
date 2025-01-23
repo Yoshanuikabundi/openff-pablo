@@ -6,7 +6,7 @@ from urllib.request import urlopen
 
 from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
 
-from ..chem import PEPTIDE_BOND
+from ..chem import PEPTIDE_BOND, PHOSPHODIESTER_BOND
 from ..residue import (
     AtomDefinition,
     BondDefinition,
@@ -263,9 +263,9 @@ LINKING_TYPES: dict[str, BondDefinition | None] = {
     # "D-saccharide, beta linking".upper(): [],
     # "DNA OH 3 prime terminus".upper(): [],
     # "DNA OH 5 prime terminus".upper(): [],
-    # "DNA linking".upper(): [],
-    # "L-DNA linking".upper(): [],
-    # "L-RNA linking".upper(): [],
+    "DNA linking".upper(): PHOSPHODIESTER_BOND,
+    "L-DNA linking".upper(): PHOSPHODIESTER_BOND,
+    "L-RNA linking".upper(): PHOSPHODIESTER_BOND,
     # "L-beta-peptide, C-gamma linking".upper(): [],
     # "L-gamma-peptide, C-delta linking".upper(): [],
     # "L-peptide COOH carboxy terminus".upper(): [],
@@ -276,7 +276,7 @@ LINKING_TYPES: dict[str, BondDefinition | None] = {
     # "L-saccharide, beta linking".upper(): [],
     # "RNA OH 3 prime terminus".upper(): [],
     # "RNA OH 5 prime terminus".upper(): [],
-    # "RNA linking".upper(): [],
+    "RNA linking".upper(): PHOSPHODIESTER_BOND,
     "non-polymer".upper(): None,
     # "other".upper(): [],
     "peptide linking".upper(): PEPTIDE_BOND,
