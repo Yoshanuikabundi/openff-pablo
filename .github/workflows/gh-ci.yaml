@@ -64,12 +64,10 @@ jobs:
           micromamba list
 
       - name: Lint
-        continue-on-error: true
         run: |
           ruff check openff
 
       - name: Type check
-        continue-on-error: true
         run: |
           basedpyright openff
 
