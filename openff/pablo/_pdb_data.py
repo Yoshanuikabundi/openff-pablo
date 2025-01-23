@@ -10,7 +10,6 @@ from typing import Any, DefaultDict, Self
 
 from ._utils import __UNSET__, dec_hex, int_or_none, with_neighbours
 from .exceptions import (
-    NoMatchingResidueDefinitionError,
     UnknownOrAmbiguousSerialInConectError,
 )
 from .residue import AtomDefinition, ResidueDefinition
@@ -485,16 +484,6 @@ class PdbData:
                     )
                     if match is not None:
                         residue_matches.append(match)
-
-            if len(residue_matches) == 0:
-                raise NoMatchingResidueDefinitionError(
-                    res_atom_idcs,
-                    self,
-                    unknown_molecules=[],
-                    additional_substructures=additional_substructures,
-                    residue_database=residue_database,
-                    verbose_errors=True,
-                )
 
             name_matches.append(residue_matches)
 
