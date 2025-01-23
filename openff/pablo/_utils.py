@@ -1,5 +1,12 @@
-from collections.abc import Iterable, Iterator
-from typing import TypeAlias, TypeVar, TypeVarTuple, no_type_check
+from collections import defaultdict
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from typing import (
+    DefaultDict,
+    TypeAlias,
+    TypeVar,
+    TypeVarTuple,
+    no_type_check,
+)
 
 from openff.toolkit.topology._mm_molecule import _SimpleMolecule
 from openff.toolkit.topology.molecule import MoleculeLike
@@ -8,16 +15,22 @@ from openff.units import unit
 from pint import Quantity
 
 __all__ = [
+    "default_dict",
     "unwrap",
+    "sort_tuple",
     "flatten",
+    "with_neighbours",
     "float_or_unknown",
     "dec_hex",
+    "int_or_none",
     "cryst_to_box_vectors",
+    "assign_stereochemistry_from_3d",
     "__UNSET__",
 ]
 
 T = TypeVar("T")
 U = TypeVar("U")
+V = TypeVar("V")
 Ts = TypeVarTuple("Ts")
 
 CIFValue: TypeAlias = str | float | int
@@ -25,6 +38,15 @@ CIFValue: TypeAlias = str | float | int
 
 class __UNSET__:
     pass
+
+
+def default_dict(
+    default_factory: Callable[[], T],
+    map: Mapping[U, V] = {},
+) -> DefaultDict[U, T | V]:
+    dd: DefaultDict[U, T | V] = defaultdict(default_factory)
+    dd.update(map)
+    return dd
 
 
 def unwrap(container: Iterable[T], msg: str = "") -> T:
@@ -62,6 +84,14 @@ def with_neighbours(
     iterable: Iterable[T],
     default: U = None,
 ) -> Iterator[tuple[T | U, T, T | U]]:
+    """Return each element of the iterable with its neighbours.
+
+        abcd -> _ab, abc, bcd, cd_
+
+    The middle element of the tuple is the current element. Missing neighbours
+    are set to ``default``. The resulting sequence has the same length as the
+    original iterable.
+    """
     iterator = iter(iterable)
 
     pred: T | U = default
@@ -113,6 +143,15 @@ def dec_hex(s: str) -> int:
         "A00F" -> 10015
         "A010" -> 10016
         ...
+        "FFFF" -> 34575
+
+    Strings that can be interpreted as hex but do not have a leading hex digit
+    greater than 9 are a value error, as are strings that cannot be interpreted
+    as either decimal or hexadecimal integers:
+
+        "10A2" -> ValueError
+        " 2.3" -> ValueError
+        "hiya" -> ValueError
     """
 
     try:
@@ -121,8 +160,17 @@ def dec_hex(s: str) -> int:
         n = len(s)
         parsed_as_hex = int(s, 16)
         smallest_hex: int = 0xA * 16 ** (n - 1)
+        if parsed_as_hex < smallest_hex:
+            raise ValueError("hex values must have leading digit greater than 9")
         largest_dec: int = 10**n - 1
         return parsed_as_hex - smallest_hex + largest_dec + 1
+
+
+def int_or_none(s: str) -> int | None:
+    if s == "":
+        return None
+    else:
+        return int(s)
 
 
 def cryst_to_box_vectors(
@@ -161,7 +209,6 @@ def assign_stereochemistry_from_3d(molecule: MoleculeLike):
             # SimpleMolecules do not store stereo info
             return
 
-        # TODO: Assign bonds as well
         rdmol = molecule.to_rdkit()
         AssignStereochemistryFrom3D(rdmol, confId=0, replaceExistingTags=True)
 

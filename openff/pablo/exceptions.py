@@ -55,7 +55,6 @@ class NoMatchingResidueDefinitionError(ValueError):
                 msg.append(f"    In {resdef.description}:")
                 msg.append(f"      Expected {sorted(resdef_names)}")
                 msg.append(f"      Found {sorted(found_names)}")
-            # TODO: Describe residue_database and additional_substructures too
 
         super().__init__("\n".join(msg))
 

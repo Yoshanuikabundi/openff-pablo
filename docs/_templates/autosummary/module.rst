@@ -73,10 +73,10 @@
    {%- endfor %}
 
    {% if types %}
-   .. rubric:: {{ _('Classes') }}
+   .. rubric:: {{ _('Other Objects') }}
 
    .. autosummary::
-      :caption: Classes
+      :caption: Other Objects
       :toctree:
       :nosignatures:
    {% for item in types %}

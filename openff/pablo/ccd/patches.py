@@ -24,6 +24,7 @@ __all__ = [
     "add_protonation_variants",
     "add_synonyms",
     "disambiguate_alt_ids",
+    "add_disulfide_crosslink",
 ]
 
 
