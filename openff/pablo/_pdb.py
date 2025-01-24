@@ -51,6 +51,7 @@ def _match_unknown_molecules(
                 "atom_serial": data.serial[pdb_index],
                 "b_factor": str(data.temp_factor[pdb_index]),
                 "occupancy": str(data.occupancy[pdb_index]),
+                "alt_loc": str(data.alt_loc[pdb_index]),
             },
         )
         for conect_idx in data.conects[pdb_index]:
@@ -217,6 +218,8 @@ def topology_from_pdb(
         The temperature b-factor for the atom.
     ``"occupancy"``
         The occupancy for the atom.
+    ``"alt_loc"``
+        The alternate location code for the atom.
 
     """
     # TODO: support streams and gzipped files
@@ -430,6 +433,7 @@ def _add_to_molecule(
                 "matched_residue_description": residue_match.residue_definition.description,
                 "b_factor": str(data.temp_factor[pdb_index]),
                 "occupancy": str(data.occupancy[pdb_index]),
+                "alt_loc": str(data.alt_loc[pdb_index]),
             },
             invalidate_cache=False,
         )
