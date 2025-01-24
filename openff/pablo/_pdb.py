@@ -182,6 +182,17 @@ def topology_from_pdb(
     distributed with this software, so by default internet access is required to
     use it.
 
+    The produced ``Topology`` will have its atoms in the same order as the PDB
+    file in all cases except when the atoms in one molecule are divided by
+    another molecule. This can happen, for example, if a PDB file with 3 chains
+    A, B and C has a disulfide bond between A and C. In this case, chains A and
+    C form a single molecule, but the atoms from B should be in the middle. This
+    atom ordering cannot be represented in :py:class:`openff.toolkit.Topology`
+    unless all 3 chains are included in a single
+    :py:class:`openff.toolkit.Molecule`, which would then represent two distinct
+    molecules. When this occurs, atoms from the latter chain(s) appear
+    immediately after the first, and atoms from other molecules appear after.
+
     The following metadata are specified for all atoms produced by this function
     and can be accessed via ``topology.atom(i).metadata[key]``:
 
