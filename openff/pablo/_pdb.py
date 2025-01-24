@@ -1,4 +1,5 @@
 import itertools
+import warnings
 from collections.abc import Iterable, Mapping, MutableSequence
 from os import PathLike
 from typing import assert_never
@@ -325,7 +326,14 @@ def topology_from_pdb(
         offmol.add_default_hierarchy_schemes()
 
     topology = Topology.from_molecules(filter(lambda m: m.n_atoms != 0, molecules))
-    topology.set_positions(np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom)  # type: ignore
+
+    positions = np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom
+    topology_pdb_indices = [atom.metadata["pdb_index"] for atom in topology.atoms]
+    if any(map(lambda t: t[0] != t[1], enumerate(topology_pdb_indices))):
+        warnings.warn("Topology is out of order")
+        topology.set_positions(positions[topology_pdb_indices])
+    else:
+        topology.set_positions(positions)
 
     if set_stereochemistry_from_3d:
         for molecule in topology.molecules:
@@ -474,6 +482,7 @@ def _add_to_molecule(
             # skip it and wait for the other residue to be read.
             return this_molecule
 
+        # If the crosslink is within this molecule, just add the bond
         if other_idx in pdb_idx_to_mol_idx:
             this_molecule._add_bond(
                 atom1=pdb_idx_to_mol_idx[this_idx],
