@@ -8,7 +8,7 @@ from openff.pablo.residue import ResidueDefinition
 
 FAST_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
     (
-        "data/193l_prepared.pdb",  # Filename
+        "data/prepared_pdbs/193l_prepared.pdb",  # Filename
         [],  # unknown_molecules
         [],  # additional_substructures
     ),
@@ -35,6 +35,16 @@ SLOW_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
                 "O=C([O-])Cn1cc(cn1)c2ccc(cc2OCC#N)Nc3ccc(c(n3)NC4CCCCC4)C#N",
             ),
         ],
+        [],
+    ),
+    (
+        "data/prepared_pdbs/2zuq_prepared.pdb",
+        [],
+        [],
+    ),
+    (
+        "data/prepared_pdbs/2hi7_prepared.pdb",
+        [],
         [],
     ),
 ]

@@ -10,6 +10,20 @@ dependencies:
   - basedpyright
   - ruff
 
+  # Testing
+  - pytest
+  # - pytest-cov
+  - pytest-xdist
+  # - codecov
+
+  # chemistry
+  - openff-toolkit-base>=0.14.7
+  - rdkit
+  - openmm
+
+  # Data
+  - numpy
+
   # Examples
   - jupyterlab>=4
   - ipywidgets>=8
@@ -21,21 +35,9 @@ dependencies:
   - black
   - isort
   - snakeviz
-
-  # Testing
-  - pytest
-  # - pytest-cov
-  - pytest-xdist
-  # - codecov
-
-  # chemistry
-  - openff-toolkit-base>=0.14.7
-  - rdkit
   - nglview>=3.0.6,<3.1.0
-  - openmm
-
-  # Data
-  - numpy
+  - pdbfixer
+  - mdanalysis
 
   - pip:
       # - codecov

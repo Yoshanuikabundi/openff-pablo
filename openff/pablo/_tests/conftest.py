@@ -11,7 +11,9 @@ from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefiniti
 @pytest.fixture(
     params=[
         "data/5ap1_prepared.pdb",
-        "data/193l_prepared.pdb",
+        "data/prepared_pdbs/193l_prepared.pdb",
+        "data/prepared_pdbs/2zuq_prepared.pdb",
+        "data/prepared_pdbs/2hi7_prepared.pdb",
         "data/3cu9_vicinal_disulfide.pdb",
         "data/e2_7nel.pdb",
     ],
@@ -22,7 +24,9 @@ def pdbfn(request: pytest.FixtureRequest) -> Path:
 
 @pytest.fixture
 def hewl_data() -> PdbData:
-    return PdbData.from_file(resource_filename(__name__, "data/193l_prepared.pdb"))
+    return PdbData.from_file(
+        resource_filename(__name__, "data/prepared_pdbs/193l_prepared.pdb"),
+    )
 
 
 @pytest.fixture

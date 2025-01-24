@@ -341,7 +341,7 @@ def topology_from_pdb(
 
 def _check_all_conects(topology: Topology, data: PdbData):
     all_bonds: set[tuple[int, int]] = {
-        sort_tuple((topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)))
+        sort_tuple((bond.atom1.metadata["pdb_index"], bond.atom2.metadata["pdb_index"]))  # type:ignore
         for bond in topology.bonds
     }
 
@@ -486,8 +486,8 @@ def _add_to_molecule(
                 "pdb_idx_to_mol_atom_idx"
             ]
             assert isinstance(
-                dict,
                 other_mol_pdb_idx_to_mol_atom_idx,
+                dict,
             ), "This property should have already been set by Pablo"
 
             if other_idx in other_mol_pdb_idx_to_mol_atom_idx:
