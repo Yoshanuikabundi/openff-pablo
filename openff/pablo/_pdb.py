@@ -336,7 +336,7 @@ def topology_from_pdb(
         offmol._invalidate_cached_properties()
         offmol.add_default_hierarchy_schemes()
 
-    topology = Topology.from_molecules(filter(lambda m: m.n_atoms != 0, molecules))
+    topology = Topology.from_molecules(filter(lambda m: m.n_atoms != 0, molecules))  # type:ignore
 
     positions = np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom
     topology_pdb_indices = [atom.metadata["pdb_index"] for atom in topology.atoms]
