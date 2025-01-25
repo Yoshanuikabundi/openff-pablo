@@ -1,4 +1,4 @@
-name: GH Actions CI
+name: GH Actions Tests
 on:
   push:
     branches:
@@ -56,4 +56,4 @@ jobs:
         with:
           files: ./coverage.xml
           disable_search: true
-          fail_ci_if_error: true
+          fail_ci_if_error: false
