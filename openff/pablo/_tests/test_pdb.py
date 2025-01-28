@@ -58,6 +58,7 @@ class TestMatchUnknownMolecules:
             assert atom.metadata["chain_id"] == e2_data.chain_id[i]
             assert atom.metadata["pdb_index"] == i
             assert atom.metadata["atom_serial"] == e2_data.serial[i]
+            assert atom.metadata["alt_loc"] == e2_data.alt_loc[i]
             assert float(atom.metadata["b_factor"]) == e2_data.temp_factor[i]
             assert float(atom.metadata["occupancy"]) == e2_data.occupancy[i]
             assert "used_synonym" not in atom.metadata

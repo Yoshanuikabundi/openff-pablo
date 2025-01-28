@@ -1,4 +1,5 @@
 import itertools
+import warnings
 from collections.abc import Iterable, Mapping, MutableSequence
 from os import PathLike
 from typing import assert_never
@@ -51,6 +52,7 @@ def _match_unknown_molecules(
                 "atom_serial": data.serial[pdb_index],
                 "b_factor": str(data.temp_factor[pdb_index]),
                 "occupancy": str(data.occupancy[pdb_index]),
+                "alt_loc": str(data.alt_loc[pdb_index]),
             },
         )
         for conect_idx in data.conects[pdb_index]:
@@ -180,6 +182,17 @@ def topology_from_pdb(
     distributed with this software, so by default internet access is required to
     use it.
 
+    The produced ``Topology`` will have its atoms in the same order as the PDB
+    file in all cases except when the atoms in one molecule are divided by
+    another molecule. This can happen, for example, if a PDB file with 3 chains
+    A, B and C has a disulfide bond between A and C. In this case, chains A and
+    C form a single molecule, but the atoms from B should be in the middle. This
+    atom ordering cannot be represented in :py:class:`openff.toolkit.Topology`
+    unless all 3 chains are included in a single
+    :py:class:`openff.toolkit.Molecule`, which would then represent two distinct
+    molecules. When this occurs, atoms from the latter chain(s) appear
+    immediately after the first, and atoms from other molecules appear after.
+
     The following metadata are specified for all atoms produced by this function
     and can be accessed via ``topology.atom(i).metadata[key]``:
 
@@ -217,6 +230,8 @@ def topology_from_pdb(
         The temperature b-factor for the atom.
     ``"occupancy"``
         The occupancy for the atom.
+    ``"alt_loc"``
+        The alternate location code for the atom.
 
     """
     # TODO: support streams and gzipped files
@@ -322,7 +337,14 @@ def topology_from_pdb(
         offmol.add_default_hierarchy_schemes()
 
     topology = Topology.from_molecules(filter(lambda m: m.n_atoms != 0, molecules))
-    topology.set_positions(np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom)  # type: ignore
+
+    positions = np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom
+    topology_pdb_indices = [atom.metadata["pdb_index"] for atom in topology.atoms]
+    if any(map(lambda t: t[0] != t[1], enumerate(topology_pdb_indices))):
+        warnings.warn("Topology is out of order")
+        topology.set_positions(positions[topology_pdb_indices])
+    else:
+        topology.set_positions(positions)
 
     if set_stereochemistry_from_3d:
         for molecule in topology.molecules:
@@ -430,6 +452,7 @@ def _add_to_molecule(
                 "matched_residue_description": residue_match.residue_definition.description,
                 "b_factor": str(data.temp_factor[pdb_index]),
                 "occupancy": str(data.occupancy[pdb_index]),
+                "alt_loc": str(data.alt_loc[pdb_index]),
             },
             invalidate_cache=False,
         )
@@ -470,6 +493,7 @@ def _add_to_molecule(
             # skip it and wait for the other residue to be read.
             return this_molecule
 
+        # If the crosslink is within this molecule, just add the bond
         if other_idx in pdb_idx_to_mol_idx:
             this_molecule._add_bond(
                 atom1=pdb_idx_to_mol_idx[this_idx],
@@ -497,7 +521,7 @@ def _add_to_molecule(
                 for old_idx, atom in enumerate(this_molecule.atoms):
                     old_to_new[old_idx] = other_molecule._add_atom(
                         atomic_number=atom.atomic_number,
-                        formal_charge=atom.formal_charge.m,
+                        formal_charge=atom.formal_charge.m,  # type:ignore
                         is_aromatic=atom.is_aromatic,
                         stereochemistry=atom.stereochemistry,
                         name=atom.name,
