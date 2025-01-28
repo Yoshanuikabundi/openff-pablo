@@ -6,9 +6,10 @@ response = requests.get(url)
 
 with open("7jjf.pdb.gz", "wb") as file:
     file.write(response.content)
-
 u = mda.Universe("7jjf.pdb.gz", topology_format="PDB")
-sel = u.select_atoms('not resname HOH MG')
+sel = u.select_atoms('(not resname HOH MG) and not(altloc B)')
+for atom in sel.atoms:
+    atom.altLoc = ''
 sel.write("7jjf_stripped.pdb")
 
 
