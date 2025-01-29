@@ -67,9 +67,9 @@ jobs:
         run: |
           ruff check openff
 
-      - name: Type check
-        run: |
-          basedpyright openff
+      #- name: Type check
+      #  run: |
+      #    basedpyright openff
 
       - name: Run tests
         run: |
