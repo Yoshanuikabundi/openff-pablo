@@ -536,10 +536,6 @@ class PdbData:
             linkage_matches.append(this_filtered_matches)
             prev_filtered_matches = this_filtered_matches
 
-        print(
-            f"{[[match.residue_definition.description for match in matches] for matches in linkage_matches]=}",
-        )
-
         # Check for crosslinks
         # TODO: This could be simplified if we required crosslinking atoms not to have synonyms
         for residue_matches in linkage_matches:

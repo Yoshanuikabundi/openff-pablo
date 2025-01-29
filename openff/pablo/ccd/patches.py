@@ -340,7 +340,6 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
                 )
             ),
         )
-        # print(f"{res2.bonds=} {old_to_new=}")
         return [res1, res2]
     else:
         return [res]

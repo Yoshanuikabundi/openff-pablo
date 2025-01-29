@@ -306,7 +306,6 @@ class ResidueDefinition:
                     f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}",
                 )
         except KeyError as e:
-            # print(self)
             raise e
 
     @classmethod
@@ -589,27 +588,19 @@ class ResidueDefinition:
                 yield bond.atom1
 
     def _leaving_fragment_of(self, linking_atom: str) -> Iterator[str]:
-        # print(f"{self=} {linking_atom=}")
         atoms_to_check = list(self.atoms_bonded_to(linking_atom))
         checked_atoms: set[str] = set()
         while atoms_to_check:
             atom_name = atoms_to_check.pop()
-            # print(f"{atoms_to_check=} {checked_atoms=} {atom_name=}")
             if self.name_to_atom[atom_name].leaving:
-                # print(1)
                 yield atom_name
-                # print(2)
                 atoms_to_check.extend(
                     filter(
                         lambda x: x not in checked_atoms,
                         self.atoms_bonded_to(atom_name),
                     ),
                 )
-                # print(3)
             checked_atoms.add(atom_name)
-            # print(4)
-
-        # print(5)
 
     @cached_property
     def posterior_bond_leaving_atoms(self) -> set[str]:
