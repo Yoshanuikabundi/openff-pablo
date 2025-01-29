@@ -8,9 +8,9 @@ coverage:
 comment:
   layout: "header"
   require_changes: false
-  branches: null
+  branches: []
   behavior: default
-  flags: null
-  paths: null
+  flags: []
+  paths: []
 ignore:
   - "openff/pablo/_version.py"
