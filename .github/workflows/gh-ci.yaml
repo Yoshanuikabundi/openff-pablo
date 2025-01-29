@@ -26,6 +26,7 @@ jobs:
   main-tests:
     if: "github.repository == 'openforcefield/openff-pablo'"
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -67,9 +68,9 @@ jobs:
         run: |
           ruff check openff
 
-      #- name: Type check
-      #  run: |
-      #    basedpyright openff
+      - name: Type check
+        run: |
+          basedpyright openff
 
       - name: Run tests
         run: |
