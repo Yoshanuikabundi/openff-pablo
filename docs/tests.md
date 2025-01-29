@@ -15,6 +15,8 @@ Pablo has a (developing) PDB test suite.
     - ACE/NME caps, `unique_molecules`
 *   - 193L_prepared.pdb
     - disulfides, all 20 canonical amino acids, charged terminii, charged canonical AA side chains
+*   - 6y0t_prepared.pdb
+    - canonical RNA loop
 :::
 
 <script>
