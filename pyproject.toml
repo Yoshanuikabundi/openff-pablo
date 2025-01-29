@@ -61,6 +61,7 @@ exclude = [
   ".soap",
   "docs",
   "examples",
+  "**/_tests/data",
 ]
 typeCheckingMode = "strict"
 
