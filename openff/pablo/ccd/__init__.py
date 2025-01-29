@@ -17,6 +17,7 @@ from .patches import (
     add_synonyms,
     disambiguate_alt_ids,
     fix_caps,
+    patch_his_sidechain_zwitterion,
     set_hop3_leaving,
 )
 
@@ -59,6 +60,7 @@ CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
         },
         {"*": disambiguate_alt_ids},
         {"*": add_synonyms},
+        {"HIS": patch_his_sidechain_zwitterion},
     ],
 )
 """The CCD, with commonly-required patches"""

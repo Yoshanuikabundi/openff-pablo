@@ -24,6 +24,7 @@ __all__ = [
     "disambiguate_alt_ids",
     "add_disulfide_crosslink",
     "add_dephosphorylated_5p_terminus",
+    "patch_his_sidechain_zwitterion",
 ]
 
 
@@ -417,3 +418,56 @@ def set_hop3_leaving(res: ResidueDefinition) -> list[ResidueDefinition]:
             ),
         ),
     ]
+
+
+def patch_his_sidechain_zwitterion(res: ResidueDefinition) -> list[ResidueDefinition]:
+    nd1_atom = res.name_to_atom.get("ND1", None)
+    ne2_atom = res.name_to_atom.get("NE2", None)
+
+    if (
+        nd1_atom is not None
+        and nd1_atom.charge == 1
+        and ne2_atom is not None
+        and ne2_atom.charge == -1
+    ):
+        bonds: list[BondDefinition] = []
+        nd1_ce1_bond: BondDefinition | None = None
+        ne2_ce1_bond: BondDefinition | None = None
+        for bond in res.bonds:
+            if {bond.atom1, bond.atom2} == {"ND1", "CE1"}:
+                nd1_ce1_bond = bond
+            elif {bond.atom1, bond.atom2} == {"NE2", "CE1"}:
+                ne2_ce1_bond = bond
+            else:
+                bonds.append(bond)
+
+        if (
+            nd1_ce1_bond is None
+            or nd1_ce1_bond.order != 2
+            or ne2_ce1_bond is None
+            or ne2_ce1_bond.order != 1
+        ):
+            raise ValueError(
+                "Zwitterionic histidine side chain detected but could not be corrected",
+            )
+        else:
+            return [
+                res.replace(
+                    bonds=[
+                        nd1_ce1_bond.replace(order=1),
+                        ne2_ce1_bond.replace(order=2),
+                        *bonds,
+                    ],
+                    atoms=[
+                        nd1_atom.replace(charge=0),
+                        ne2_atom.replace(charge=0),
+                        *(
+                            atom
+                            for atom in res.atoms
+                            if atom is not nd1_atom and atom is not ne2_atom
+                        ),
+                    ],
+                ),
+            ]
+    else:
+        return [res]
