@@ -49,14 +49,14 @@ ACIDIC_PROTONS: dict[str, list[str]] = {
     "TRP": ["HXT", "H2", "HE1"],
     "TYR": ["HXT", "H2", "HH"],
     "VAL": ["HXT", "H2"],
-    "DG": ["HOP2", "HO3'"],
-    "DA": ["HOP2", "HO3'"],
-    "DT": ["HOP2", "HO3'"],
-    "DC": ["HOP2", "HO3'"],
-    "G": ["HOP2", "HO3'"],
-    "A": ["HOP2", "HO3'"],
-    "U": ["HOP2", "HO3'"],
-    "C": ["HOP2", "HO3'"],
+    "DG": ["HOP2", "HOP3", "HO3'"],
+    "DA": ["HOP2", "HOP3", "HO3'"],
+    "DT": ["HOP2", "HOP3", "HO3'"],
+    "DC": ["HOP2", "HOP3", "HO3'"],
+    "G": ["HOP2", "HOP3", "HO3'"],
+    "A": ["HOP2", "HOP3", "HO3'"],
+    "U": ["HOP2", "HOP3", "HO3'"],
+    "C": ["HOP2", "HOP3", "HO3'"],
 }
 """Map from residue name to a list of atom names of abstractable hydrogens.
 

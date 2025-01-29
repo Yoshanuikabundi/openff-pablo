@@ -66,6 +66,7 @@ class AtomDefinition:
         cls,
         name: str,
         symbol: str,
+        *,
         synonyms: Iterable[str] = (),
         leaving: bool = False,
         charge: int = 0,
@@ -84,6 +85,7 @@ class AtomDefinition:
 
     def replace(
         self,
+        *,
         name: str | __UNSET__ = __UNSET__(),
         symbol: str | __UNSET__ = __UNSET__(),
         synonyms: Iterable[str] | __UNSET__ = __UNSET__(),
@@ -131,6 +133,7 @@ class BondDefinition:
         cls,
         atom1: str,
         atom2: str,
+        *,
         order: int = 1,
         aromatic: bool = False,
         stereo: Literal["E", "Z"] | None = None,
@@ -145,6 +148,7 @@ class BondDefinition:
 
     def replace(
         self,
+        *,
         atom1: str | __UNSET__ = __UNSET__(),
         atom2: str | __UNSET__ = __UNSET__(),
         order: int | __UNSET__ = __UNSET__(),
@@ -239,6 +243,7 @@ class ResidueDefinition:
 
     def replace(
         self,
+        *,
         residue_name: str | __UNSET__ = __UNSET__(),
         description: str | __UNSET__ = __UNSET__(),
         linking_bond: BondDefinition | None | __UNSET__ = __UNSET__(),
