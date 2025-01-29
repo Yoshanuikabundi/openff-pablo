@@ -278,6 +278,7 @@ class TestPdbData:
             chain_id=["A"] * 6 + ["B"] * 6,
             res_seq=[1] * 8 + [2] * 4,
             i_code=[" "] * 10 + ["A"] * 2,
+            alt_loc=[""] * 12,
         )
 
         assert list(data.residue_indices) == [

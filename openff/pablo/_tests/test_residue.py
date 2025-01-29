@@ -2,7 +2,12 @@ import pytest
 from openff.toolkit import Molecule
 
 from openff.pablo.chem import DISULFIDE_BOND, PEPTIDE_BOND
-from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefinition
+from openff.pablo.residue import (
+    AtomDefinition,
+    BondDefinition,
+    ResidueDefinition,
+    _skip_residue_definition_validation,
+)
 
 
 class TestBondDefinition:
@@ -11,6 +16,28 @@ class TestBondDefinition:
             BondDefinition.with_defaults("H1", "H2")
             == BondDefinition.with_defaults("H2", "H1").flipped()
         )
+
+    def test_replace_atom1(self):
+        with _skip_residue_definition_validation():
+            replaced = PEPTIDE_BOND.replace(atom1="CO")
+
+        assert PEPTIDE_BOND.atom1 == "C"
+        assert replaced.atom1 == "CO"
+        assert PEPTIDE_BOND.atom2 == replaced.atom2
+        assert PEPTIDE_BOND.order == replaced.order
+        assert PEPTIDE_BOND.aromatic == replaced.aromatic
+        assert PEPTIDE_BOND.stereo == replaced.stereo
+
+    def test_replace_atom2(self):
+        with _skip_residue_definition_validation():
+            replaced = PEPTIDE_BOND.replace(atom2="NH")
+
+        assert PEPTIDE_BOND.atom2 == "N"
+        assert replaced.atom2 == "NH"
+        assert PEPTIDE_BOND.atom1 == replaced.atom1
+        assert PEPTIDE_BOND.order == replaced.order
+        assert PEPTIDE_BOND.aromatic == replaced.aromatic
+        assert PEPTIDE_BOND.stereo == replaced.stereo
 
 
 class TestResidueDefinition:
@@ -36,6 +63,78 @@ class TestResidueDefinition:
             13: "HG",
             14: "HXT",
         }
+
+    def test_replace_residue_name(self, cys_def: ResidueDefinition):
+        with _skip_residue_definition_validation():
+            replaced = cys_def.replace(residue_name="CYX")
+
+        assert cys_def.residue_name == "CYS"
+        assert replaced.residue_name == "CYX"
+        assert cys_def.atoms == replaced.atoms
+        assert cys_def.bonds == replaced.bonds
+        assert cys_def.description == replaced.description
+        assert cys_def.crosslink == replaced.crosslink
+        assert cys_def.linking_bond == replaced.linking_bond
+
+    def test_replace_atoms(self, cys_def: ResidueDefinition):
+        with _skip_residue_definition_validation():
+            replaced = cys_def.replace(atoms=())
+
+        assert cys_def.atoms != ()
+        assert replaced.atoms == ()
+        assert cys_def.bonds == replaced.bonds
+        assert cys_def.description == replaced.description
+        assert cys_def.crosslink == replaced.crosslink
+        assert cys_def.linking_bond == replaced.linking_bond
+        assert cys_def.residue_name == replaced.residue_name
+
+    def test_replace_bonds(self, cys_def: ResidueDefinition):
+        with _skip_residue_definition_validation():
+            replaced = cys_def.replace(bonds=())
+
+        assert cys_def.bonds != ()
+        assert replaced.bonds == ()
+        assert cys_def.atoms == replaced.atoms
+        assert cys_def.description == replaced.description
+        assert cys_def.crosslink == replaced.crosslink
+        assert cys_def.linking_bond == replaced.linking_bond
+        assert cys_def.residue_name == replaced.residue_name
+
+    def test_replace_description(self, cys_def: ResidueDefinition):
+        with _skip_residue_definition_validation():
+            replaced = cys_def.replace(description="Hello there")
+
+        assert replaced.description == "Hello there"
+        assert cys_def.description == "CYSTEINE"
+        assert cys_def.atoms == replaced.atoms
+        assert cys_def.bonds == replaced.bonds
+        assert cys_def.crosslink == replaced.crosslink
+        assert cys_def.linking_bond == replaced.linking_bond
+        assert cys_def.residue_name == replaced.residue_name
+
+    def test_replace_crosslink(self, cys_def: ResidueDefinition):
+        with _skip_residue_definition_validation():
+            replaced = cys_def.replace(crosslink=PEPTIDE_BOND)
+
+        assert replaced.crosslink == PEPTIDE_BOND
+        assert cys_def.crosslink == DISULFIDE_BOND
+        assert cys_def.atoms == replaced.atoms
+        assert cys_def.bonds == replaced.bonds
+        assert cys_def.description == replaced.description
+        assert cys_def.linking_bond == replaced.linking_bond
+        assert cys_def.residue_name == replaced.residue_name
+
+    def test_replace_linking_bond(self, cys_def: ResidueDefinition):
+        with _skip_residue_definition_validation():
+            replaced = cys_def.replace(linking_bond=DISULFIDE_BOND)
+
+        assert replaced.linking_bond == DISULFIDE_BOND
+        assert cys_def.linking_bond == PEPTIDE_BOND
+        assert cys_def.atoms == replaced.atoms
+        assert cys_def.bonds == replaced.bonds
+        assert cys_def.description == replaced.description
+        assert cys_def.crosslink == replaced.crosslink
+        assert cys_def.residue_name == replaced.residue_name
 
     def test_from_molecule(
         self,

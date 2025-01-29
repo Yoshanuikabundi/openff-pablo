@@ -6,12 +6,12 @@ from urllib.request import urlopen
 
 from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
 
-from ..chem import PEPTIDE_BOND
+from ..chem import PEPTIDE_BOND, PHOSPHODIESTER_BOND
 from ..residue import (
     AtomDefinition,
     BondDefinition,
     ResidueDefinition,
-    _defer_residue_definition_validation,
+    _skip_residue_definition_validation,
 )
 
 __all__ = [
@@ -65,10 +65,18 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         ] = [dict(d) for d in patches]
 
         for file in path.glob("*.cif"):
-            self._add_definition_from_str(file.read_text())
+            try:
+                self._add_definition_from_str(file.read_text())
+            except Exception:
+                # If adding a file fails, skip it - we want an error at runtime, not importtime
+                pass
 
         for resname in set(preload) - set(self._definitions):
-            self[resname]
+            try:
+                self[resname]
+            except Exception:
+                # If a preload fails, skip it - we want an error at runtime, not importtime
+                pass
 
     def __repr__(self):
         return (
@@ -95,7 +103,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         self,
         residue_definition: ResidueDefinition,
     ) -> list[ResidueDefinition]:
-        with _defer_residue_definition_validation():
+        with _skip_residue_definition_validation():
             definitions: list[ResidueDefinition] = [residue_definition]
             for patch_dict in self._patches:
                 patched_definitions: list[ResidueDefinition] = []
@@ -214,7 +222,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             else:
                 bonds = []
 
-            with _defer_residue_definition_validation():
+            with _skip_residue_definition_validation():
                 residue_definition = ResidueDefinition(
                     residue_name=residueName,
                     description=residue_description,
@@ -263,9 +271,9 @@ LINKING_TYPES: dict[str, BondDefinition | None] = {
     # "D-saccharide, beta linking".upper(): [],
     # "DNA OH 3 prime terminus".upper(): [],
     # "DNA OH 5 prime terminus".upper(): [],
-    # "DNA linking".upper(): [],
-    # "L-DNA linking".upper(): [],
-    # "L-RNA linking".upper(): [],
+    "DNA linking".upper(): PHOSPHODIESTER_BOND,
+    "L-DNA linking".upper(): PHOSPHODIESTER_BOND,
+    "L-RNA linking".upper(): PHOSPHODIESTER_BOND,
     # "L-beta-peptide, C-gamma linking".upper(): [],
     # "L-gamma-peptide, C-delta linking".upper(): [],
     # "L-peptide COOH carboxy terminus".upper(): [],
@@ -276,7 +284,7 @@ LINKING_TYPES: dict[str, BondDefinition | None] = {
     # "L-saccharide, beta linking".upper(): [],
     # "RNA OH 3 prime terminus".upper(): [],
     # "RNA OH 5 prime terminus".upper(): [],
-    # "RNA linking".upper(): [],
+    "RNA linking".upper(): PHOSPHODIESTER_BOND,
     "non-polymer".upper(): None,
     # "other".upper(): [],
     "peptide linking".upper(): PEPTIDE_BOND,
