@@ -100,6 +100,7 @@ def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_lega
         for pablo_atom, legacy_atom in zip(pablo_mol.atoms, legacy_mol.atoms):
             assert pablo_atom.name == legacy_atom.name
             assert pablo_atom.symbol == legacy_atom.symbol
+            assert pablo_atom.formal_charge == legacy_atom.formal_charge
             for key in [
                 "residue_name",
                 "chain_id",
@@ -116,10 +117,3 @@ def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_lega
             for bond in legacy_mol.bonds
         }
         assert pablo_bonds == legacy_bonds
-
-    for pablo_res, legacy_res in zip(pablo_top.residues, legacy_top.residues):
-        pablo_res_charge, legacy_res_charge = 0, 0
-        for pablo_atom, legacy_atom in zip(pablo_res.atoms, legacy_res.atoms):
-            pablo_res_charge += pablo_atom.formal_charge  # type:ignore
-            legacy_res_charge += legacy_atom.formal_charge  # type:ignore
-        assert pablo_res_charge == legacy_res_charge
