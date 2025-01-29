@@ -2,8 +2,6 @@
 Patches to add essential features to the CCD.
 """
 
-import dataclasses
-from copy import deepcopy
 from itertools import combinations
 
 from openff.pablo.chem import DISULFIDE_BOND
@@ -25,6 +23,7 @@ __all__ = [
     "add_synonyms",
     "disambiguate_alt_ids",
     "add_disulfide_crosslink",
+    "add_dephosphorylated_5p_terminus",
 ]
 
 
@@ -50,6 +49,14 @@ ACIDIC_PROTONS: dict[str, list[str]] = {
     "TRP": ["HXT", "H2", "HE1"],
     "TYR": ["HXT", "H2", "HH"],
     "VAL": ["HXT", "H2"],
+    "DG": ["HOP2"],
+    "DA": ["HOP2"],
+    "DT": ["HOP2"],
+    "DC": ["HOP2"],
+    "G": ["HOP2"],
+    "A": ["HOP2"],
+    "U": ["HOP2"],
+    "C": ["HOP2"],
 }
 """Map from residue name to a list of atom names of abstractable hydrogens.
 
@@ -103,12 +110,10 @@ def fix_caps(res: ResidueDefinition) -> list[ResidueDefinition]:
     """
 
     return [
-        dataclasses.replace(
-            res,
+        res.replace(
             linking_bond=PEPTIDE_BOND,
             atoms=[
-                dataclasses.replace(
-                    atom,
+                atom.replace(
                     leaving=True if atom.name == "H" else atom.leaving,
                 )
                 for atom in res.atoms
@@ -145,7 +150,9 @@ def add_deprotonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]
                 bonded_atoms.append(bond.atom1)
 
         if len(bonded_atoms) != 1:
-            raise ValueError("should be exactly 1 bonded atom to abstracted proton")
+            raise ValueError(
+                f"should be exactly 1 bonded atom to abstracted proton {hydrogen}, found {len(bonded_atoms)} in {res.description}",
+            )
         deprotonations.append((hydrogen, bonded_atoms[0]))
 
     variants: list[ResidueDefinition] = [res]
@@ -162,7 +169,7 @@ def add_deprotonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]
             atoms: list[AtomDefinition] = []
             for atom in res.atoms:
                 if atom.name in partners:
-                    atoms.append(dataclasses.replace(atom, charge=atom.charge - 1))
+                    atoms.append(atom.replace(charge=atom.charge - 1))
                 elif atom.name in hydrogens:
                     if atom.symbol != "H":
                         raise ValueError(
@@ -172,8 +179,7 @@ def add_deprotonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]
                     atoms.append(atom)
 
             variants.append(
-                dataclasses.replace(
-                    res,
+                res.replace(
                     atoms=atoms,
                     bonds=bonds,
                     description=res.description + f" -{' -'.join(hydrogens)}",
@@ -216,12 +222,11 @@ def add_protonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
                 )
                 for i, atom in enumerate(res.atoms):
                     if atom.name == heavy_atom:
-                        atoms[i] = dataclasses.replace(atom, charge=atom.charge + 1)
+                        atoms[i] = atom.replace(charge=atom.charge + 1)
 
             hydrogens, _partners = zip(*combination)
             variants.append(
-                dataclasses.replace(
-                    res,
+                res.replace(
                     atoms=atoms,
                     bonds=bonds,
                     description=res.description + f" +{' +'.join(hydrogens)}",
@@ -235,26 +240,23 @@ def add_synonyms(res: ResidueDefinition) -> list[ResidueDefinition]:
     """
     Patch a residue definition to include synonyms from :py:data:`ATOM_NAME_SYNONYMS`.
     """
-    return [
-        dataclasses.replace(
-            res,
-            atoms=tuple(
-                dataclasses.replace(
-                    atom,
-                    synonyms=tuple(
-                        {
-                            *atom.synonyms,
-                            *ATOM_NAME_SYNONYMS.get(res.residue_name, {}).get(
-                                atom.name,
-                                [],
-                            ),
-                        },
-                    ),
+    patched_residues = [
+        res.replace(
+            atoms=(
+                atom.replace(
+                    synonyms={
+                        *atom.synonyms,
+                        *ATOM_NAME_SYNONYMS.get(res.residue_name, {}).get(
+                            atom.name,
+                            [],
+                        ),
+                    },
                 )
                 for atom in res.atoms
             ),
         ),
     ]
+    return patched_residues
 
 
 def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
@@ -283,7 +285,7 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
             if synonym in canonical_names:
                 clashes.append(i)
 
-    if clashes:
+    if len(clashes) != 0:
         old_to_new: dict[str, str] = {}
         for atom in res.atoms:
             if atom.synonyms:
@@ -291,48 +293,45 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
             else:
                 old_to_new[atom.name] = atom.name
 
-        res1 = dataclasses.replace(
-            res,
+        res1 = res.replace(
             atoms=[
-                dataclasses.replace(
-                    atom,
-                    synonyms=[] if i in clashes else deepcopy(atom.synonyms),
+                atom.replace(
+                    synonyms=[],
                 )
-                for i, atom in enumerate(res.atoms)
+                for atom in res.atoms
             ],
         )
-        res2 = dataclasses.replace(
-            res,
+        res2 = res.replace(
             atoms=[
-                dataclasses.replace(
-                    atom,
+                atom.replace(
                     name=old_to_new[atom.name],
-                    synonyms=[] if atom.synonyms else deepcopy(atom.synonyms),
+                    synonyms=[],
                 )
                 for atom in res.atoms
             ],
             bonds=[
-                dataclasses.replace(
-                    bond,
+                bond.replace(
                     atom1=old_to_new[bond.atom1],
                     atom2=old_to_new[bond.atom2],
                 )
                 for bond in res.bonds
             ],
-            description=res.description + "altids",
+            description=res.description + " altids",
             crosslink=(
                 None
                 if res.crosslink is None
-                else dataclasses.replace(
-                    res.crosslink,
+                else res.crosslink.replace(
                     atom1=old_to_new[res.crosslink.atom1],
+                    atom2=old_to_new.get(
+                        res.crosslink.atom2,
+                        res.crosslink.atom2,
+                    ),
                 )
             ),
             linking_bond=(
                 None
                 if res.linking_bond is None
-                else dataclasses.replace(
-                    res.linking_bond,
+                else res.linking_bond.replace(
                     atom1=old_to_new[res.linking_bond.atom1],
                     atom2=old_to_new.get(
                         res.linking_bond.atom2,
@@ -341,6 +340,7 @@ def disambiguate_alt_ids(res: ResidueDefinition) -> list[ResidueDefinition]:
                 )
             ),
         )
+        # print(f"{res2.bonds=} {old_to_new=}")
         return [res1, res2]
     else:
         return [res]
@@ -353,12 +353,68 @@ def add_disulfide_crosslink(res: ResidueDefinition) -> list[ResidueDefinition]:
         )
 
     return [
-        dataclasses.replace(
-            res,
+        res.replace(
             crosslink=DISULFIDE_BOND,
             atoms=[
-                atom if atom.name != "HG" else dataclasses.replace(atom, leaving=True)
+                atom if atom.name != "HG" else atom.replace(leaving=True)
                 for atom in res.atoms
             ],
+        ),
+    ]
+
+
+def add_dephosphorylated_5p_terminus(res: ResidueDefinition) -> list[ResidueDefinition]:
+    phosphate_names = {"P", "HOP2", "HOP3", "OP1", "OP2", "OP3"}
+
+    return [
+        res,
+        res.replace(
+            atoms=(
+                AtomDefinition(
+                    name="HO5'",
+                    synonyms=(),
+                    symbol="H",
+                    aromatic=False,
+                    charge=0,
+                    leaving=False,
+                    stereo=None,
+                ),
+                *(atom for atom in res.atoms if atom.name not in phosphate_names),
+            ),
+            bonds=(
+                BondDefinition(
+                    atom1="O5'",
+                    atom2="HO5'",
+                    aromatic=False,
+                    order=1,
+                    stereo=None,
+                ),
+                *(
+                    bond
+                    for bond in res.bonds
+                    if bond.atom1 not in phosphate_names
+                    and bond.atom2 not in phosphate_names
+                ),
+            ),
+            description=(
+                res.description[:-17] + "-5'-PROTONATED"
+                if res.description.endswith("-5'-MONOPHOSPHATE")
+                else res.description + " 5' dephosphorylated"
+            ),
+        ),
+    ]
+
+
+def set_hop3_leaving(res: ResidueDefinition) -> list[ResidueDefinition]:
+    """The OP3 and HOP3 atoms in nucleic acid residues are both absent when the
+    residue forms part of a polymer, but only OP3 is marked as leaving; HOP3
+    becomes a disconnected fragment"""
+    # TODO: Replace this with disconnected fragment detection in ResidueDefinition._leaving_fragment_of()
+    return [
+        res.replace(
+            atoms=(
+                atom.replace(leaving=True) if atom.name == "HOP3" else atom
+                for atom in res.atoms
+            ),
         ),
     ]
