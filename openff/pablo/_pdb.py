@@ -502,9 +502,9 @@ def _add_to_molecule(
             return this_molecule
 
         for other_molecule in molecules:
-            other_mol_pdb_idx_to_mol_atom_idx = other_molecule.properties[
-                "pdb_idx_to_mol_atom_idx"
-            ]
+            other_mol_pdb_idx_to_mol_atom_idx: dict[int, int] = (
+                other_molecule.properties["pdb_idx_to_mol_atom_idx"]
+            )
             assert isinstance(
                 other_mol_pdb_idx_to_mol_atom_idx,
                 dict,
