@@ -7,8 +7,7 @@ from pathlib import Path
 def get_test_data_path(path: Path | str) -> Path:
     """Get the filename of a resource"""
     # TODO: Do this non-deprecated-ly
-    with importlib.resources.as_file(importlib.resources.files()) as root:
+    with importlib.resources.as_file(importlib.resources.files(__package__)) as root:
         pass
     assert root.is_dir()
-    print(root)
     return root / "data" / path
