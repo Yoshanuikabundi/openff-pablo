@@ -13,7 +13,7 @@ from typing import Literal, Self
 from openff.toolkit import Molecule
 from openff.units import elements, unit
 
-from openff.pablo._utils import unwrap
+from openff.pablo._utils import __UNSET__, unwrap
 
 __all__ = [
     "AtomDefinition",
@@ -25,7 +25,7 @@ _residue_definition_skip_validation = False
 
 
 @contextmanager
-def _defer_residue_definition_validation():  # type: ignore[deadcode]
+def _skip_residue_definition_validation():  # type: ignore[deadcode]
     global _residue_definition_skip_validation
     _residue_definition_skip_validation = True
     yield
@@ -66,6 +66,7 @@ class AtomDefinition:
         cls,
         name: str,
         symbol: str,
+        *,
         synonyms: Iterable[str] = (),
         leaving: bool = False,
         charge: int = 0,
@@ -80,6 +81,29 @@ class AtomDefinition:
             charge=charge,
             aromatic=aromatic,
             stereo=stereo,
+        )
+
+    def replace(
+        self,
+        *,
+        name: str | __UNSET__ = __UNSET__(),
+        symbol: str | __UNSET__ = __UNSET__(),
+        synonyms: Iterable[str] | __UNSET__ = __UNSET__(),
+        leaving: bool | __UNSET__ = __UNSET__(),
+        charge: int | __UNSET__ = __UNSET__(),
+        aromatic: bool | __UNSET__ = __UNSET__(),
+        stereo: Literal["S", "R"] | None | __UNSET__ = __UNSET__(),
+    ) -> Self:
+        return self.__class__(
+            name=self.name if isinstance(name, __UNSET__) else name,
+            symbol=self.symbol if isinstance(symbol, __UNSET__) else symbol,
+            synonyms=(
+                self.synonyms if isinstance(synonyms, __UNSET__) else tuple(synonyms)
+            ),
+            leaving=self.leaving if isinstance(leaving, __UNSET__) else leaving,
+            charge=self.charge if isinstance(charge, __UNSET__) else charge,
+            aromatic=self.aromatic if isinstance(aromatic, __UNSET__) else aromatic,
+            stereo=self.stereo if isinstance(stereo, __UNSET__) else stereo,
         )
 
 
@@ -109,6 +133,7 @@ class BondDefinition:
         cls,
         atom1: str,
         atom2: str,
+        *,
         order: int = 1,
         aromatic: bool = False,
         stereo: Literal["E", "Z"] | None = None,
@@ -119,6 +144,23 @@ class BondDefinition:
             order=order,
             aromatic=aromatic,
             stereo=stereo,
+        )
+
+    def replace(
+        self,
+        *,
+        atom1: str | __UNSET__ = __UNSET__(),
+        atom2: str | __UNSET__ = __UNSET__(),
+        order: int | __UNSET__ = __UNSET__(),
+        aromatic: bool | __UNSET__ = __UNSET__(),
+        stereo: Literal["E", "Z"] | None | __UNSET__ = __UNSET__(),
+    ) -> Self:
+        return self.__class__(
+            atom1=self.atom1 if isinstance(atom1, __UNSET__) else atom1,
+            atom2=self.atom2 if isinstance(atom2, __UNSET__) else atom2,
+            order=self.order if isinstance(order, __UNSET__) else order,
+            aromatic=(self.aromatic if isinstance(aromatic, __UNSET__) else aromatic),
+            stereo=self.stereo if isinstance(stereo, __UNSET__) else stereo,
         )
 
 
@@ -199,6 +241,35 @@ class ResidueDefinition:
     bonds: tuple[BondDefinition, ...]
     """The bond definitions that make up this residue"""
 
+    def replace(
+        self,
+        *,
+        residue_name: str | __UNSET__ = __UNSET__(),
+        description: str | __UNSET__ = __UNSET__(),
+        linking_bond: BondDefinition | None | __UNSET__ = __UNSET__(),
+        crosslink: BondDefinition | None | __UNSET__ = __UNSET__(),
+        atoms: Iterable[AtomDefinition] | __UNSET__ = __UNSET__(),
+        bonds: Iterable[BondDefinition] | __UNSET__ = __UNSET__(),
+    ) -> Self:
+        return self.__class__(
+            residue_name=(
+                self.residue_name
+                if isinstance(residue_name, __UNSET__)
+                else residue_name
+            ),
+            description=(
+                self.description if isinstance(description, __UNSET__) else description
+            ),
+            linking_bond=(
+                self.linking_bond
+                if isinstance(linking_bond, __UNSET__)
+                else linking_bond
+            ),
+            crosslink=self.crosslink if isinstance(crosslink, __UNSET__) else crosslink,
+            atoms=self.atoms if isinstance(atoms, __UNSET__) else tuple(atoms),
+            bonds=self.bonds if isinstance(bonds, __UNSET__) else tuple(bonds),
+        )
+
     def __post_init__(self):
         if _residue_definition_skip_validation:
             return
@@ -206,31 +277,36 @@ class ResidueDefinition:
         self._validate()
 
     def _validate(self):
-        if (
-            self.linking_bond is None
-            and self.crosslink is None
-            and True in {atom.leaving for atom in self.atoms}
-        ):
-            raise ValueError(
-                f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond or crosslink",
-                self,
-            )
-        if len({atom.name for atom in self.atoms}) != len(self.atoms):
-            raise ValueError(
-                f"{self.residue_name}: All atoms must have unique canonical names",
-            )
+        try:
+            if (
+                self.linking_bond is None
+                and self.crosslink is None
+                and True in {atom.leaving for atom in self.atoms}
+            ):
+                raise ValueError(
+                    f"{self.residue_name}: Leaving atoms were specified, but there is no linking bond or crosslink",
+                    self,
+                )
+            if len({atom.name for atom in self.atoms}) != len(self.atoms):
+                raise ValueError(
+                    f"{self.residue_name}: All atoms must have unique canonical names",
+                )
 
-        all_leaving_atoms = {atom.name for atom in self.atoms if atom.leaving}
-        assigned_leaving_atoms = (
-            self.prior_bond_leaving_atoms
-            | self.posterior_bond_leaving_atoms
-            | self.crosslink_leaving_atoms
-        )
-        unassigned_leaving_atoms = all_leaving_atoms.difference(assigned_leaving_atoms)
-        if len(unassigned_leaving_atoms) != 0:
-            raise ValueError(
-                f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}",
+            all_leaving_atoms = {atom.name for atom in self.atoms if atom.leaving}
+            assigned_leaving_atoms = (
+                self.prior_bond_leaving_atoms
+                | self.posterior_bond_leaving_atoms
+                | self.crosslink_leaving_atoms
             )
+            unassigned_leaving_atoms = all_leaving_atoms.difference(
+                assigned_leaving_atoms,
+            )
+            if len(unassigned_leaving_atoms) != 0:
+                raise ValueError(
+                    f"{self.residue_name}: Leaving atoms could not be assigned to a bond: {unassigned_leaving_atoms}",
+                )
+        except KeyError as e:
+            raise e
 
     @classmethod
     def from_molecule(

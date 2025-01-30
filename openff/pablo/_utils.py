@@ -26,6 +26,7 @@ __all__ = [
     "cryst_to_box_vectors",
     "assign_stereochemistry_from_3d",
     "__UNSET__",
+    "dbg",
 ]
 
 T = TypeVar("T")
@@ -38,6 +39,13 @@ CIFValue: TypeAlias = str | float | int
 
 class __UNSET__:
     pass
+
+
+def dbg(o: T, msg: str = "{}") -> T:
+    if "{}" not in msg:
+        msg += ": {}"
+    print(msg.format(o))
+    return o
 
 
 def default_dict(

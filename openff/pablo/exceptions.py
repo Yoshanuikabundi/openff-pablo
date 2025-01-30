@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING
 
 from openff.toolkit import Molecule
 
+from openff.pablo._utils import flatten
+
 if TYPE_CHECKING:
     from openff.pablo._pdb_data import PdbData, ResidueMatch
     from openff.pablo.residue import ResidueDefinition
@@ -47,14 +49,31 @@ class NoMatchingResidueDefinitionError(ValueError):
             residue_definitions = list(residue_database[res_name])
             if len(residue_definitions) == 0:
                 msg.append("  No residues in database for residue name {res_name}")
-            found_names = [data.name[i] for i in res_atom_idcs]
+            found_names = {data.name[i] for i in res_atom_idcs}
             for resdef in residue_definitions:
-                resdef_names = [
-                    "|".join([atom.name, *atom.synonyms]) for atom in resdef.atoms
-                ]
+                extra_names = found_names.difference(
+                    flatten([atom.name, *atom.synonyms] for atom in resdef.atoms),
+                )
+                missing_names = {
+                    "|".join([atom.name, *atom.synonyms])
+                    for atom in resdef.atoms
+                    if atom.name not in found_names
+                    and all([synonym not in found_names for synonym in atom.synonyms])
+                    and not atom.leaving
+                }
+                missing_leavers = {
+                    "|".join([atom.name, *atom.synonyms])
+                    for atom in resdef.atoms
+                    if atom.name not in found_names
+                    and all([synonym not in found_names for synonym in atom.synonyms])
+                    and atom.leaving
+                }
                 msg.append(f"    In {resdef.description}:")
-                msg.append(f"      Expected {sorted(resdef_names)}")
-                msg.append(f"      Found {sorted(found_names)}")
+                msg.append(f"      {sorted(extra_names)} were found but not expected")
+                msg.append(f"      {sorted(missing_names)} were expected but not found")
+                msg.append(
+                    f"      Leaving atoms {sorted(missing_leavers)} were also not found",
+                )
 
         super().__init__("\n".join(msg))
 
