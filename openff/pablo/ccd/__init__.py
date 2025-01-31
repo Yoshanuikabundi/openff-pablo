@@ -29,8 +29,8 @@ __all__ = [
 
 # TODO: Replace these patches with CONECT records?
 CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
-    # TODO: Store the user's cache in a more appropriate location
-    Path(__file__).parent / "../../../.ccd_cache",
+    # TODO: Use a proper resource setup for this
+    [Path(__file__).parent / "data/ccd_cache"],
     patches=[
         {
             "ACE": fix_caps,

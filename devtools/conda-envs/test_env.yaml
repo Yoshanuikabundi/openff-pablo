@@ -5,6 +5,7 @@ dependencies:
   # Base depends
   - pip
   - python>=3.11
+  - pyxdg
 
   # Lints
   - basedpyright
@@ -26,6 +27,7 @@ dependencies:
   - pytest
   # - pytest-cov
   - pytest-xdist
+  - pytest-socket
   # - codecov
 
   # chemistry
