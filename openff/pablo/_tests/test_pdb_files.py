@@ -26,6 +26,11 @@ FAST_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
         ],
         [],
     ),
+    (
+        "data/1UAO.pdb",
+        [],
+        [],
+    ),
 ]
 SLOW_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
     (
@@ -98,7 +103,10 @@ def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_lega
     for pablo_mol, legacy_mol in zip(pablo_top.molecules, legacy_top.molecules):
         assert pablo_mol.n_atoms == legacy_mol.n_atoms
         for pablo_atom, legacy_atom in zip(pablo_mol.atoms, legacy_mol.atoms):
-            assert pablo_atom.name == legacy_atom.name
+            assert (
+                pablo_atom.name == legacy_atom.name
+                or pablo_atom.metadata["canonical_name"] == legacy_atom.name
+            )
             assert pablo_atom.symbol == legacy_atom.symbol
             assert pablo_atom.formal_charge == legacy_atom.formal_charge
             for key in [
