@@ -461,9 +461,14 @@ class PdbData:
         name_matches: list[list[ResidueMatch]] = []
         atom_idx_to_res_idx: dict[int, int] = {}
         for res_idx, res_atom_idcs in enumerate(self.residue_indices):
-            logging.debug(f"Beginning name-based match of {res_atom_idcs}")
             prototype_index = res_atom_idcs[0]
             res_name = self.res_name[prototype_index]
+            logging.debug(f"Beginning name-based match of {res_name} {res_atom_idcs}")
+            if len(res_atom_idcs) <= 3:
+                logging.debug(
+                    f"  Atom names are ({', '.join(self.name[i] for i in res_atom_idcs)})",
+                )
+
             atom_idx_to_res_idx.update({i: res_idx for i in res_atom_idcs})
 
             residue_matches: list[ResidueMatch] = []
