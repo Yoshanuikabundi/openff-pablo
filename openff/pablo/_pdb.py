@@ -1,9 +1,10 @@
 import itertools
 import warnings
 from collections.abc import Iterable, Mapping, MutableSequence
+from io import TextIOBase
 from os import PathLike
 from pathlib import Path
-from typing import assert_never
+from typing import IO, assert_never
 
 import numpy as np
 from openff.toolkit import Molecule, Topology
@@ -102,7 +103,7 @@ def _match_unknown_molecules(
 
 
 def topology_from_pdb(
-    path: PathLike[str] | str,
+    file: PathLike[str] | str | IO[str] | TextIOBase,
     unknown_molecules: Iterable[Molecule] = [],
     residue_database: Mapping[
         str,
@@ -137,8 +138,8 @@ def topology_from_pdb(
 
     Parameters
     ----------
-    path
-        The path to the PDB file.
+    file
+        The path to the PDB file or the PDB file as a file-like object.
     unknown_molecules
         A list of molecules to match residues not found in the
         ``residue_database`` against. Unlike ``residue_database``, this requires
@@ -235,8 +236,10 @@ def topology_from_pdb(
         The alternate location code for the atom.
 
     """
-    # TODO: support streams and gzipped files
-    data = PdbData.from_file(path)
+    if isinstance(file, TextIOBase) or isinstance(file, IO):
+        data = PdbData.from_file_object(file)
+    else:
+        data = PdbData.from_file(file)
 
     this_molecule = Molecule()
     molecules: list[Molecule] = [this_molecule]
