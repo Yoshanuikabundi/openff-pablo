@@ -101,6 +101,7 @@ ATOM_NAME_SYNONYMS = {
     "NME": {"HN2": ["H"]},
     "NA": {"NA": ["Na"]},
     "CL": {"CL": ["Cl"]},
+    "GLY": {"H": ["H1"]},
 }
 """Map from residue name and then canonical atom name to a list of synonyms"""
 
@@ -225,7 +226,7 @@ def add_protonated_variants(res: ResidueDefinition) -> list[ResidueDefinition]:
                     if atom.name == heavy_atom:
                         atoms[i] = atom.replace(charge=atom.charge + 1)
 
-            hydrogens, _partners = zip(*combination)
+            _partners, hydrogens = zip(*combination)
             variants.append(
                 res.replace(
                     atoms=atoms,
