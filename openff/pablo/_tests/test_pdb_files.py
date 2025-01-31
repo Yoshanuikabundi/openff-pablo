@@ -27,7 +27,7 @@ FAST_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
         [],
     ),
     (
-        "prepared_pdbs/ions.pdb",
+        "data/prepared_pdbs/ions.pdb",
         [],
         [],
     ),
