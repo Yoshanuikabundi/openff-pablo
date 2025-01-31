@@ -38,6 +38,9 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         corresponding to key ``"*"`` will be applied to all residues before the
         more specific patches. Use :py:func:`combine_patches` to combine
         multiple patches into one.
+    extra_definitions
+        Additional residue definitions to add to the cache. Note that patches
+        are not applied to these definitions.
     """
 
     # TODO: Methods for adding entries from mapped SMILES
@@ -56,6 +59,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
                 Callable[[ResidueDefinition], list[ResidueDefinition]],
             ]
         ] = {},
+        extra_definitions: Mapping[str, Iterable[ResidueDefinition]] = {},
     ):
         self._cache_path = cache_path.resolve()
         self._cache_path.mkdir(parents=True, exist_ok=True)
@@ -84,11 +88,18 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
                 # If a preload fails, skip it - we want an error at runtime, not importtime
                 pass
 
+        self._extra_definitions_set = False
+        for resname, resdefs in extra_definitions.items():
+            self._extra_definitions_set = True
+            self._add_definitions(resdefs, resname)
+
     def __repr__(self):
         return (
             f"CcdCache(path={self._cache_path},"
             + f" preload={list(self._definitions)},"
-            + f" patches={self._patches!r})"
+            + f" patches={self._patches!r}"
+            + (", extra_definitions={...}" if self._extra_definitions_set else "")
+            + ")"
         )
 
     def __getitem__(self, key: str) -> list[ResidueDefinition]:
@@ -131,9 +142,9 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
 
     def _add_definition_from_str(self, s: str, res_name: str | None = None) -> None:
         definition = self._res_def_from_ccd_str(s)
-        self._add_definition(definition, res_name)
+        self._add_and_patch_definition(definition, res_name)
 
-    def _add_definition(
+    def _add_and_patch_definition(
         self,
         definition: ResidueDefinition,
         res_name: str | None = None,
@@ -141,14 +152,20 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         if res_name is None:
             res_name = definition.residue_name.upper()
 
-        patched_definitions = self._apply_patches(definition)
+        self._add_definitions(self._apply_patches(definition), res_name)
 
-        assert all(
-            res_name == definition.residue_name.upper()
-            for definition in patched_definitions
-        )
-
-        self._definitions.setdefault(res_name, []).extend(patched_definitions)
+    def _add_definitions(
+        self,
+        definitions: Iterable[ResidueDefinition],
+        res_name: str,
+    ) -> None:
+        for definition in definitions:
+            if res_name != definition.residue_name.upper():
+                raise ValueError(
+                    f"ResidueDefinition {definition.residue_name}"
+                    + f" ({definition.description}) must have residue name {res_name}",
+                )
+        self._definitions.setdefault(res_name, []).extend(definitions)
 
     def _download_cif(self, resname: str) -> str:
         with urlopen(

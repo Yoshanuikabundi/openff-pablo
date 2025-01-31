@@ -263,20 +263,20 @@ class PdbData:
                 data._append_coord_line(line)
                 data.model[-1] = model_n
             if line.startswith("TER   "):
-                terminated_resname = line[17:20].strip() or data.res_name[-1]
-                terminated_chainid = line[21].strip() or data.chain_id[-1]
-                terminated_resseq = dec_hex(line[22:26]) or data.res_seq[-1]
-                for i in range(-1, -99999, -1):
+                terminated_resname = data.res_name[-1]
+                terminated_chainid = data.chain_id[-1]
+                terminated_resseq = data.res_seq[-1]
+                terminated_icode = data.i_code[-1]
+                for i in range(len(data.res_name) - 1, 0, -1):
                     if (
                         data.res_name[i] == terminated_resname
                         and data.chain_id[i] == terminated_chainid
                         and data.res_seq[i] == terminated_resseq
+                        and data.i_code[i] == terminated_icode
                     ):
                         data.terminated[i] = True
                     else:
                         break
-                else:
-                    assert False, "last residue too big"
             if line.startswith("CRYST1"):
                 data.cryst1_a = float(line[6:15])
                 data.cryst1_b = float(line[15:24])
@@ -473,9 +473,14 @@ class PdbData:
         name_matches: list[list[ResidueMatch]] = []
         atom_idx_to_res_idx: dict[int, int] = {}
         for res_idx, res_atom_idcs in enumerate(self.residue_indices):
-            logging.debug(f"Beginning name-based match of {res_atom_idcs}")
             prototype_index = res_atom_idcs[0]
             res_name = self.res_name[prototype_index]
+            logging.debug(f"Beginning name-based match of {res_name} {res_atom_idcs}")
+            if len(res_atom_idcs) <= 3:
+                logging.debug(
+                    f"  Atom names are ({', '.join(self.name[i] for i in res_atom_idcs)})",
+                )
+
             atom_idx_to_res_idx.update({i: res_idx for i in res_atom_idcs})
 
             residue_matches: list[ResidueMatch] = []
