@@ -113,4 +113,8 @@ poetry.lock
 # ruff
 .ruff_cache
 
+# pixi
+.pixi
+pixi.lock
+
 .ccd_cache
