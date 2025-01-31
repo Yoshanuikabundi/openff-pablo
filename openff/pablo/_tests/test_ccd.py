@@ -6,6 +6,17 @@ from openff.pablo.ccd import CCD_RESIDUE_DEFINITION_CACHE
 @pytest.mark.parametrize(
     "resname",
     [
+        "EST",
+    ],
+)
+def test_ccdcache_can_load_residues_with_internet(resname: str):
+    CCD_RESIDUE_DEFINITION_CACHE[resname]
+
+
+@pytest.mark.disable_socket
+@pytest.mark.parametrize(
+    "resname",
+    [
         "ALA",
         "ARG",
         "ASN",
@@ -49,5 +60,5 @@ from openff.pablo.ccd import CCD_RESIDUE_DEFINITION_CACHE
         "HOH",
     ],
 )
-def test_ccdcache_can_load_common_residues(resname: str):
+def test_ccdcache_can_load_common_residues_without_internet(resname: str):
     CCD_RESIDUE_DEFINITION_CACHE[resname]
