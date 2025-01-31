@@ -89,6 +89,7 @@ reportMissingTypeStubs = "none"
 reportUnnecessaryIsInstance = "none"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportPrivateUsage = "information"
+reportMissingTypeArgument = "none"
 
 strictGenericNarrowing = true
 

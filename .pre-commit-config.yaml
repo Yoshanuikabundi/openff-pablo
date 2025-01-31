@@ -8,6 +8,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: '.*\.pdb'
       - id: end-of-file-fixer
       - id: debug-statements
   - repo: https://github.com/asottile/pyupgrade

@@ -8,6 +8,8 @@ definitions from the CCD and is the default residue database used by
 
 from pathlib import Path
 
+from openff.pablo.residue import ResidueDefinition
+
 from . import patches
 from ._ccdcache import CcdCache
 from .patches import (
@@ -29,8 +31,8 @@ __all__ = [
 
 # TODO: Replace these patches with CONECT records?
 CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
-    # TODO: Store the user's cache in a more appropriate location
-    Path(__file__).parent / "../../../.ccd_cache",
+    # TODO: Use a proper resource setup for this
+    [Path(__file__).parent / "data/ccd_cache"],
     patches=[
         {
             "ACE": fix_caps,
@@ -62,5 +64,6 @@ CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
         {"*": add_synonyms},
         {"HIS": patch_his_sidechain_zwitterion},
     ],
+    extra_definitions={"I": [ResidueDefinition.from_smiles("[I-:1]", {1: "I"}, "I")]},
 )
 """The CCD, with commonly-required patches"""

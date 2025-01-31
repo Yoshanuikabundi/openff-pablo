@@ -37,24 +37,29 @@ def vicinal_disulfide_data() -> PdbData:
 
 
 @pytest.fixture
-def cys_data() -> PdbData:
+def cys_pdblines() -> list[str]:
+    return [
+        "ATOM      1  N   CYS     2      -0.664  -1.578  -0.633  1.00  0.00           N  ",
+        "ATOM      2  CA  CYS     2      -0.105  -0.229  -0.633  1.00  0.00           C  ",
+        "ATOM      3  C   CYS     2       1.405  -0.269  -0.633  1.00  0.00           C  ",
+        "ATOM      4  O   CYS     2       2.034  -1.337  -0.633  1.00  0.00           O  ",
+        "ATOM      5  CB  CYS     2      -0.674   0.537   0.577  1.00  0.00           C  ",
+        "ATOM      6  SG  CYS     2      -0.163   2.270   0.535  1.00  0.00           S  ",
+        "ATOM      7  OXT CYS     2       2.131   0.963  -0.633  1.00  0.00           O  ",
+        "ATOM      8  H   CYS     2      -0.036  -2.457  -0.633  1.00  0.00           H  ",
+        "ATOM      9  H2  CYS     2      -1.244  -1.644   0.190  1.00  0.00           H  ",
+        "ATOM     10  HA  CYS     2      -0.420   0.277  -1.564  1.00  0.00           H  ",
+        "ATOM     11  HB2 CYS     2      -0.349   0.082   1.535  1.00  0.00           H  ",
+        "ATOM     12  HB3 CYS     2      -1.778   0.509   0.585  1.00  0.00           H  ",
+        "ATOM     13  HG  CYS     2       0.749   2.191   1.501  1.00  0.00           H  ",
+        "ATOM     14  HXT CYS     2       2.294   1.239   0.272  1.00  0.00           H  ",
+    ]
+
+
+@pytest.fixture
+def cys_data(cys_pdblines: list[str]) -> PdbData:
     return PdbData.parse_pdb(
-        lines=[
-            "ATOM      1  N   CYS     2      -0.664  -1.578  -0.633  1.00  0.00           N  ",
-            "ATOM      2  CA  CYS     2      -0.105  -0.229  -0.633  1.00  0.00           C  ",
-            "ATOM      3  C   CYS     2       1.405  -0.269  -0.633  1.00  0.00           C  ",
-            "ATOM      4  O   CYS     2       2.034  -1.337  -0.633  1.00  0.00           O  ",
-            "ATOM      5  CB  CYS     2      -0.674   0.537   0.577  1.00  0.00           C  ",
-            "ATOM      6  SG  CYS     2      -0.163   2.270   0.535  1.00  0.00           S  ",
-            "ATOM      7  OXT CYS     2       2.131   0.963  -0.633  1.00  0.00           O  ",
-            "ATOM      8  H   CYS     2      -0.036  -2.457  -0.633  1.00  0.00           H  ",
-            "ATOM      9  H2  CYS     2      -1.244  -1.644   0.190  1.00  0.00           H  ",
-            "ATOM     10  HA  CYS     2      -0.420   0.277  -1.564  1.00  0.00           H  ",
-            "ATOM     11  HB2 CYS     2      -0.349   0.082   1.535  1.00  0.00           H  ",
-            "ATOM     12  HB3 CYS     2      -1.778   0.509   0.585  1.00  0.00           H  ",
-            "ATOM     13  HG  CYS     2       0.749   2.191   1.501  1.00  0.00           H  ",
-            "ATOM     14  HXT CYS     2       2.294   1.239   0.272  1.00  0.00           H  ",
-        ],
+        lines=cys_pdblines,
     )
 
 

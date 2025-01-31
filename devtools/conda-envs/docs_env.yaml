@@ -24,6 +24,7 @@ dependencies:
   - typer>=0.14
   - mdanalysis
   - rdkit
+  - pyxdg
 
   #  Pip-only installs
   - pip:

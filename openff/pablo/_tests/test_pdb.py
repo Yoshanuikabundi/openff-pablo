@@ -1,9 +1,14 @@
 import random
+from io import StringIO
 
 import pytest
 from openff.toolkit import Molecule
 
-from openff.pablo._pdb import _add_to_molecule, _match_unknown_molecules
+from openff.pablo._pdb import (
+    _add_to_molecule,
+    _match_unknown_molecules,
+    topology_from_pdb,
+)
 from openff.pablo._pdb_data import PdbData, ResidueMatch
 
 
@@ -125,3 +130,9 @@ def test_add_to_molecule_when_empty(cys_data: PdbData, cys_match: ResidueMatch):
         atom_stereochemistry_matching=False,
     )
     assert matched
+
+
+def test_load_file_object(cys_pdblines: list[str]):
+    with StringIO(initial_value="\n".join(cys_pdblines)) as f:
+        top = topology_from_pdb(f)
+    assert top.n_atoms == 14

@@ -123,8 +123,39 @@ class TestResidueMatch:
 
 
 class TestPdbData:
-    def test_can_load_pdb_file(self, pdbfn: Path):
+    def test_can_load_pdb_file_from_file_name(self, pdbfn: Path):
         data = PdbData.from_file(pdbfn)
+        n_atom_records = len(
+            [
+                line
+                for line in pdbfn.read_text().splitlines()
+                if line.startswith("ATOM  ") or line.startswith("HETATM")
+            ],
+        )
+        for field_name in [
+            "name",
+            "model",
+            "serial",
+            "alt_loc",
+            "res_name",
+            "chain_id",
+            "res_seq",
+            "i_code",
+            "x",
+            "y",
+            "z",
+            "occupancy",
+            "temp_factor",
+            "element",
+            "charge",
+            "terminated",
+            "conects",
+        ]:
+            assert len(getattr(data, field_name)) == n_atom_records
+
+    def test_can_load_pdb_file_from_file_oobject(self, pdbfn: Path):
+        with open(pdbfn) as f:
+            data = PdbData.from_file_object(f)
         n_atom_records = len(
             [
                 line
@@ -273,12 +304,12 @@ class TestPdbData:
 
     def test_residue_indices(self):
         data = PdbData(
-            model=[None] * 2 + [1] * 10,
-            res_name=["HOH"] * 4 + ["GLY"] * 8,
-            chain_id=["A"] * 6 + ["B"] * 6,
-            res_seq=[1] * 8 + [2] * 4,
-            i_code=[" "] * 10 + ["A"] * 2,
-            alt_loc=[""] * 12,
+            res_name=["HOH"] * 2 + ["GLY"] * 8,
+            chain_id=["A"] * 4 + ["B"] * 6,
+            res_seq=[1] * 6 + [2] * 4,
+            i_code=[" "] * 8 + ["A"] * 2,
+            model=[None] * 10,
+            alt_loc=[""] * 10,
         )
 
         assert list(data.residue_indices) == [
@@ -287,7 +318,27 @@ class TestPdbData:
             (4, 5),
             (6, 7),
             (8, 9),
-            (10, 11),
+        ]
+
+    def test_residue_indices_multimodel(self):
+        data = PdbData(
+            res_name=["HOH"] * 2 + ["GLY"] * 10,
+            chain_id=["A"] * 4 + ["B"] * 8,
+            res_seq=[1] * 6 + [2] * 6,
+            i_code=[" "] * 8 + ["A"] * 4,
+            model=[None] * 10 + [1] * 2,
+            alt_loc=[""] * 12,
+        )
+
+        with pytest.warns(match="Multi-model files not supported"):
+            residues_indices = list(data.residue_indices)
+
+        assert residues_indices == [
+            (0, 1),
+            (2, 3),
+            (4, 5),
+            (6, 7),
+            (8, 9),
         ]
 
     def test_subset_matches_residue_raises_on_empty(
