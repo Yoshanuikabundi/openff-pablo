@@ -36,6 +36,17 @@ from openff.pablo.ccd import CCD_RESIDUE_DEFINITION_CACHE
         "C",
         "ACE",
         "NME",
+        "NA",
+        "CL",
+        "BR",
+        "CS",
+        "IOD",
+        "LI",
+        "RB",
+        "XE",
+        "F",
+        "K",
+        "HOH",
     ],
 )
 def test_ccdcache_can_load_common_residues(resname: str):
