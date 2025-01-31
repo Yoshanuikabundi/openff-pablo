@@ -1,5 +1,4 @@
 import itertools
-import warnings
 from collections.abc import Iterable, Mapping, MutableSequence
 from io import TextIOBase
 from os import PathLike
@@ -341,13 +340,10 @@ def topology_from_pdb(
 
     topology = Topology.from_molecules(filter(lambda m: m.n_atoms != 0, molecules))
 
-    positions = np.stack([data.x, data.y, data.z], axis=-1) * unit.angstrom
     topology_pdb_indices = [atom.metadata["pdb_index"] for atom in topology.atoms]
-    if any(map(lambda t: t[0] != t[1], enumerate(topology_pdb_indices))):
-        warnings.warn("Topology is out of order")
-        topology.set_positions(positions[topology_pdb_indices])
-    else:
-        topology.set_positions(positions)
+    n = len(topology_pdb_indices)
+    positions = np.stack([data.x[:n], data.y[:n], data.z[:n]], axis=-1) * unit.angstrom
+    topology.set_positions(positions[topology_pdb_indices])
 
     if set_stereochemistry_from_3d:
         for molecule in topology.molecules:

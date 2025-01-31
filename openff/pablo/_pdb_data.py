@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -335,6 +336,12 @@ class PdbData:
             if alt_loc != "":
                 # TODO: Support alt locs
                 raise ValueError("Alt loc not supported")
+            if prev is not None and residue_info[0] != prev[0]:
+                # TODO: Support multi-model files
+                warnings.warn(
+                    "Multi-model files not supported; topology will reflect first model",
+                )
+                break
             if prev == residue_info or prev is None:
                 indices.append(atom_idx)
             else:
