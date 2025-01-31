@@ -123,8 +123,39 @@ class TestResidueMatch:
 
 
 class TestPdbData:
-    def test_can_load_pdb_file(self, pdbfn: Path):
+    def test_can_load_pdb_file_from_file_name(self, pdbfn: Path):
         data = PdbData.from_file(pdbfn)
+        n_atom_records = len(
+            [
+                line
+                for line in pdbfn.read_text().splitlines()
+                if line.startswith("ATOM  ") or line.startswith("HETATM")
+            ],
+        )
+        for field_name in [
+            "name",
+            "model",
+            "serial",
+            "alt_loc",
+            "res_name",
+            "chain_id",
+            "res_seq",
+            "i_code",
+            "x",
+            "y",
+            "z",
+            "occupancy",
+            "temp_factor",
+            "element",
+            "charge",
+            "terminated",
+            "conects",
+        ]:
+            assert len(getattr(data, field_name)) == n_atom_records
+
+    def test_can_load_pdb_file_from_file_oobject(self, pdbfn: Path):
+        with open(pdbfn) as f:
+            data = PdbData.from_file_object(f)
         n_atom_records = len(
             [
                 line

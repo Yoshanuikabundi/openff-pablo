@@ -4,9 +4,9 @@ from collections import defaultdict
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cached_property
+from io import TextIOBase
 from os import PathLike
-from pathlib import Path
-from typing import Any, DefaultDict, Self
+from typing import IO, Any, DefaultDict, Self
 
 from ._utils import __UNSET__, dec_hex, int_or_none, with_neighbours
 from .exceptions import (
@@ -210,7 +210,12 @@ class PdbData:
 
     @classmethod
     def from_file(cls, path: str | PathLike[str]) -> Self:
-        return cls.parse_pdb(Path(path).read_text().splitlines())
+        with open(path) as f:
+            return cls.from_file_object(f)
+
+    @classmethod
+    def from_file_object(cls, file: IO[str] | TextIOBase) -> Self:
+        return cls.parse_pdb(file.readlines())
 
     def _append_coord_line(self, line: str):
         for field_ in dataclasses.fields(self):
