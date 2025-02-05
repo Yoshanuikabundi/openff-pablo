@@ -347,7 +347,10 @@ def topology_from_pdb(
     topology.set_positions(positions[topology_pdb_indices])
     if topology_pdb_indices != list(range(n)):
         warnings.warn(
-            "Due to limitations of different topology representations, I was unable to preserve the atom indices from the input PDB. The atoms in this topology will not be in same order as those in PDB file"
+            "Due to limitations of different topology representations, I was"
+            + " unable to preserve the atom indices from the input PDB. The"
+            + " atoms in this topology will not be in same order as those in"
+            + " PDB file",
         )
 
     if set_stereochemistry_from_3d:
