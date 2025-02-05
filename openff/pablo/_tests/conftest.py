@@ -1,34 +1,38 @@
 from pathlib import Path
 
 import pytest
-from pkg_resources import resource_filename
 
 from openff.pablo._pdb_data import PdbData, ResidueMatch
+from openff.pablo._tests.utils import get_test_data_path
 from openff.pablo.chem import DISULFIDE_BOND, PEPTIDE_BOND
 from openff.pablo.residue import AtomDefinition, BondDefinition, ResidueDefinition
 
 
 @pytest.fixture(
     params=[
-        "data/5ap1_prepared.pdb",
-        "data/193l_prepared.pdb",
-        "data/3cu9_vicinal_disulfide.pdb",
-        "data/e2_7nel.pdb",
+        "5ap1_prepared.pdb",
+        "prepared_pdbs/193l_prepared.pdb",
+        "prepared_pdbs/2zuq_prepared.pdb",
+        "prepared_pdbs/2hi7_prepared.pdb",
+        "3cu9_vicinal_disulfide.pdb",
+        "e2_7nel.pdb",
     ],
 )
 def pdbfn(request: pytest.FixtureRequest) -> Path:
-    return Path(resource_filename(__name__, request.param))
+    return get_test_data_path(request.param)
 
 
 @pytest.fixture
 def hewl_data() -> PdbData:
-    return PdbData.from_file(resource_filename(__name__, "data/193l_prepared.pdb"))
+    return PdbData.from_file(
+        get_test_data_path("prepared_pdbs/193l_prepared.pdb"),
+    )
 
 
 @pytest.fixture
 def vicinal_disulfide_data() -> PdbData:
     return PdbData.from_file(
-        resource_filename(__name__, "data/3cu9_vicinal_disulfide.pdb"),
+        get_test_data_path("3cu9_vicinal_disulfide.pdb"),
     )
 
 
@@ -61,7 +65,7 @@ def cys_data(cys_pdblines: list[str]) -> PdbData:
 
 @pytest.fixture
 def e2_data() -> PdbData:
-    return PdbData.from_file(resource_filename(__name__, "data/e2_7nel.pdb"))
+    return PdbData.from_file(get_test_data_path("e2_7nel.pdb"))
 
 
 @pytest.fixture

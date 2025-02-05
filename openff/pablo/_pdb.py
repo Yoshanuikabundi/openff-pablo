@@ -1,4 +1,5 @@
 import itertools
+import warnings
 from collections.abc import Iterable, Mapping, MutableSequence
 from io import TextIOBase
 from os import PathLike
@@ -344,6 +345,12 @@ def topology_from_pdb(
     n = len(topology_pdb_indices)
     positions = np.stack([data.x[:n], data.y[:n], data.z[:n]], axis=-1) * unit.angstrom
     topology.set_positions(positions[topology_pdb_indices])
+    if topology_pdb_indices != list(range(n)):
+        warnings.warn(
+            "Input PDB has an atom ordering that cannot be represented in an"
+            + " OpenFF Topology. The atoms in this topology will not be in same"
+            + " order as those in PDB file",
+        )
 
     if set_stereochemistry_from_3d:
         for molecule in topology.molecules:
@@ -362,7 +369,7 @@ def topology_from_pdb(
 
 def _check_all_conects(topology: Topology, data: PdbData):
     all_bonds: set[tuple[int, int]] = {
-        sort_tuple((topology.atom_index(bond.atom1), topology.atom_index(bond.atom2)))
+        sort_tuple((bond.atom1.metadata["pdb_index"], bond.atom2.metadata["pdb_index"]))  # type:ignore
         for bond in topology.bonds
     }
 
@@ -501,12 +508,12 @@ def _add_to_molecule(
             return this_molecule
 
         for other_molecule in molecules:
-            other_mol_pdb_idx_to_mol_atom_idx = other_molecule.properties[
-                "pdb_idx_to_mol_atom_idx"
-            ]
+            other_mol_pdb_idx_to_mol_atom_idx: dict[int, int] = (
+                other_molecule.properties["pdb_idx_to_mol_atom_idx"]
+            )
             assert isinstance(
-                dict,
                 other_mol_pdb_idx_to_mol_atom_idx,
+                dict,
             ), "This property should have already been set by Pablo"
 
             if other_idx in other_mol_pdb_idx_to_mol_atom_idx:

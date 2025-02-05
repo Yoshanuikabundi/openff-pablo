@@ -15,6 +15,10 @@ Pablo has a (developing) PDB test suite.
     - ACE/NME caps, `unique_molecules`
 *   - 193L_prepared.pdb
     - disulfides, all 20 canonical amino acids, charged terminii, charged canonical AA side chains
+*   - 2hi7_prepared.pdb
+    - disulfide bond between two different protein chains
+*   - 2zuq_prepared.pdb
+    - disulfide bond between two different protein chains, with additional chains between and after the crosslinked chains
 :::
 
 <script>
