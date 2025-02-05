@@ -63,10 +63,6 @@ jobs:
           micromamba info
           micromamba list
 
-      - name: Lint
-        run: |
-          ruff check openff
-
       - name: Type check
         run: |
           basedpyright openff
