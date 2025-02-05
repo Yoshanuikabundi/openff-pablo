@@ -23,6 +23,34 @@ def pdbfn(request: pytest.FixtureRequest) -> Path:
 
 
 @pytest.fixture
+def all_aa_resnames() -> set[str]:
+    resnames = {
+        "ALA",
+        "ARG",
+        "ASN",
+        "ASP",
+        "CYS",
+        "GLU",
+        "GLN",
+        "GLY",
+        "HIS",
+        "ILE",
+        "LEU",
+        "LYS",
+        "MET",
+        "PHE",
+        "PRO",
+        "SER",
+        "THR",
+        "TRP",
+        "TYR",
+        "VAL",
+    }
+    assert len(resnames) == 20
+    return resnames
+
+
+@pytest.fixture
 def hewl_data() -> PdbData:
     return PdbData.from_file(
         get_test_data_path("prepared_pdbs/193l_prepared.pdb"),

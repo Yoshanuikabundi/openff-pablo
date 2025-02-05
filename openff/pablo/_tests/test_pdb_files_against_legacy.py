@@ -36,6 +36,11 @@ FAST_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
         [],
         [],
     ),
+    (
+        "data/2MUM.pdb",
+        [],
+        [],
+    ),
 ]
 SLOW_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
     (
