@@ -25,12 +25,13 @@ __all__ = [
     "add_disulfide_crosslink",
     "add_dephosphorylated_5p_terminus",
     "patch_his_sidechain_zwitterion",
+    "delete_doubly_deprotonated_arginine",
 ]
 
 
 ACIDIC_PROTONS: dict[str, list[str]] = {
     "ALA": ["HXT", "H2"],
-    "ARG": ["HXT", "H2", "HH12"],
+    "ARG": ["HXT", "H2", "HH12", "HH22"],
     "ASN": ["HXT", "H2"],
     "ASP": ["HXT", "H2", "HD2"],
     "CYS": ["HXT", "H2", "HG"],
@@ -488,5 +489,16 @@ def patch_his_sidechain_zwitterion(res: ResidueDefinition) -> list[ResidueDefini
                     ],
                 ),
             ]
+    else:
+        return [res]
+
+
+def delete_doubly_deprotonated_arginine(
+    res: ResidueDefinition,
+) -> list[ResidueDefinition]:
+    """HH12 and HH22 are both acidic, but only one can leave at a time"""
+    atom_names = {atom.name for atom in res.atoms}
+    if "HH22" not in atom_names and "HH12" not in atom_names:
+        return []
     else:
         return [res]

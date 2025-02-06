@@ -17,6 +17,7 @@ from .patches import (
     add_disulfide_crosslink,
     add_protonation_variants,
     add_synonyms,
+    delete_doubly_deprotonated_arginine,
     disambiguate_alt_ids,
     fix_caps,
     patch_his_sidechain_zwitterion,
@@ -62,7 +63,10 @@ CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
         },
         {"*": disambiguate_alt_ids},
         {"*": add_synonyms},
-        {"HIS": patch_his_sidechain_zwitterion},
+        {
+            "HIS": patch_his_sidechain_zwitterion,
+            "ARG": delete_doubly_deprotonated_arginine,
+        },
     ],
     extra_definitions={"I": [ResidueDefinition.from_smiles("[I-:1]", {1: "I"}, "I")]},
 )
