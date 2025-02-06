@@ -276,9 +276,25 @@ class TestPdbData:
             lines,
             serial_to_index,
             conects=[set(), set()],
+            model=[None, None],
         )
 
         assert conects == [{1}, {0}]
+
+    def test_process_conects_works_with_multiple_models(self):
+        serial_to_index: dict[int, list[int]] = {3: [0, 2], 4: [1, 3]}
+        model = [1, 1, 2, 2]
+        conects: list[set[int]] = [set(), set(), set(), set()]
+        lines: list[str] = ["CONECT    3    4"]
+
+        conects = PdbData._process_conects(
+            lines,
+            serial_to_index,
+            conects=conects,
+            model=model,
+        )
+
+        assert conects == [{1}, {0}, {3}, {2}]
 
     def test_process_conects_raises_when_ambiguous(self):
         serial_to_index: dict[int, list[int]] = {3: [0], 4: [1, 2]}
@@ -289,6 +305,7 @@ class TestPdbData:
                 lines,
                 serial_to_index,
                 conects=[set(), set(), set()],
+                model=[None, None, None],
             )
 
     def test_process_conects_raises_when_serial_missing(self):
@@ -300,6 +317,7 @@ class TestPdbData:
                 lines,
                 serial_to_index,
                 conects=[set(), set(), set()],
+                model=[None, None, None],
             )
 
     def test_residue_indices(self):

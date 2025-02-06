@@ -25,12 +25,13 @@ __all__ = [
     "add_disulfide_crosslink",
     "add_dephosphorylated_5p_terminus",
     "patch_his_sidechain_zwitterion",
+    "delete_doubly_deprotonated_arginine",
 ]
 
 
 ACIDIC_PROTONS: dict[str, list[str]] = {
     "ALA": ["HXT", "H2"],
-    "ARG": ["HXT", "H2", "HH12"],
+    "ARG": ["HXT", "H2", "HH12", "HH22"],
     "ASN": ["HXT", "H2"],
     "ASP": ["HXT", "H2", "HD2"],
     "CYS": ["HXT", "H2", "HG"],
@@ -101,7 +102,25 @@ ATOM_NAME_SYNONYMS = {
     "NME": {"HN2": ["H"]},
     "NA": {"NA": ["Na"]},
     "CL": {"CL": ["Cl"]},
+    "ALA": {"H": ["H1"]},
+    "ARG": {"H": ["H1"]},
+    "ASN": {"H": ["H1"]},
+    "ASP": {"H": ["H1"]},
+    "CYS": {"H": ["H1"]},
+    "GLN": {"H": ["H1"]},
+    "GLU": {"H": ["H1"]},
     "GLY": {"H": ["H1"]},
+    "HIS": {"H": ["H1"]},
+    "ILE": {"H": ["H1"]},
+    "LEU": {"H": ["H1"]},
+    "LYS": {"H": ["H1"]},
+    "MET": {"H": ["H1"]},
+    "PHE": {"H": ["H1"]},
+    "SER": {"H": ["H1"]},
+    "THR": {"H": ["H1"]},
+    "TRP": {"H": ["H1"]},
+    "TYR": {"H": ["H1"]},
+    "VAL": {"H": ["H1"]},
 }
 """Map from residue name and then canonical atom name to a list of synonyms"""
 
@@ -470,5 +489,16 @@ def patch_his_sidechain_zwitterion(res: ResidueDefinition) -> list[ResidueDefini
                     ],
                 ),
             ]
+    else:
+        return [res]
+
+
+def delete_doubly_deprotonated_arginine(
+    res: ResidueDefinition,
+) -> list[ResidueDefinition]:
+    """HH12 and HH22 are both acidic, but only one can leave at a time"""
+    atom_names = {atom.name for atom in res.atoms}
+    if "HH22" not in atom_names and "HH12" not in atom_names:
+        return []
     else:
         return [res]

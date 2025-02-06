@@ -235,10 +235,10 @@ def topology_from_pdb(
         The alternate location code for the atom.
 
     """
-    if isinstance(file, TextIOBase) or isinstance(file, IO):
-        data = PdbData.from_file_object(file)
+    if hasattr(file, "readlines"):
+        data = PdbData.from_file_object(file)  # type: ignore
     else:
-        data = PdbData.from_file(file)
+        data = PdbData.from_file(file)  # type: ignore
 
     this_molecule = Molecule()
     molecules: list[Molecule] = [this_molecule]
@@ -381,8 +381,10 @@ def _check_all_conects(topology: Topology, data: PdbData):
         raise ValueError(
             "CONECT records without chemical information not supported",
             sorted(
-                sorted([data.serial[a], data.serial[b]])
-                for a, b in conect_bonds.difference(all_bonds)
+                {
+                    sort_tuple((data.serial[a], data.serial[b]))
+                    for a, b in conect_bonds.difference(all_bonds)
+                },
             ),
         )
 

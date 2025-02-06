@@ -286,7 +286,12 @@ class PdbData:
                 data.cryst1_gamma = float(line[47:54])
 
         # Read all CONECT records
-        data.conects = cls._process_conects(lines, data.serial_to_index, data.conects)
+        data.conects = cls._process_conects(
+            lines,
+            data.serial_to_index,
+            data.conects,
+            data.model,
+        )
 
         return data
 
@@ -295,28 +300,37 @@ class PdbData:
         lines: Iterable[str],
         serial_to_index: dict[int, list[int]],
         conects: list[set[int]],
+        model: Sequence[int | None],
     ) -> list[set[int]]:
         for line in lines:
             if line.startswith("CONECT "):
+                # a is the serial of the first atom in the conect, we need its indices
                 a = int(line[6:11])
                 a_idcs = serial_to_index.get(a, [])
-                if len(a_idcs) != 1:
+
+                # Conects are usually provided once for multi-model files
+                # Raise an error if there are multiple indices for the serial
+                # within a single model, as the bond is ambiguous
+                a_models = {model[i] for i in a_idcs}
+                if len(a_models) != len(a_idcs):
                     raise UnknownOrAmbiguousSerialInConectError(a, a_idcs)
-                a_idx = a_idcs[0]
 
-                for start, stop in [(11, 16), (16, 21), (21, 26), (26, 31)]:
-                    try:
-                        b = int(line[start:stop])
-                    except (ValueError, IndexError):
-                        continue
+                for a_idx, a_model in zip(a_idcs, a_models):
+                    for start, stop in [(11, 16), (16, 21), (21, 26), (26, 31)]:
+                        try:
+                            b = int(line[start:stop])
+                        except (ValueError, IndexError):
+                            continue
 
-                    b_idcs = serial_to_index.get(b, [])
-                    if len(b_idcs) != 1:
-                        raise UnknownOrAmbiguousSerialInConectError(b, b_idcs)
-                    b_idx = b_idcs[0]
+                        b_idcs = [
+                            i for i in serial_to_index.get(b, []) if model[i] == a_model
+                        ]
+                        if len(b_idcs) != 1:
+                            raise UnknownOrAmbiguousSerialInConectError(b, b_idcs)
+                        b_idx = b_idcs[0]
 
-                    conects[a_idx].add(b_idx)
-                    conects[b_idx].add(a_idx)
+                        conects[a_idx].add(b_idx)
+                        conects[b_idx].add(a_idx)
         return conects
 
     @property

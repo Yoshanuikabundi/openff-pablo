@@ -19,6 +19,8 @@ Pablo has a (developing) PDB test suite.
     - disulfide bond between two different protein chains
 *   - 2zuq_prepared.pdb
     - disulfide bond between two different protein chains, with additional chains between and after the crosslinked chains
+*   - 2MUM_neutralized.pdb
+    - all 20 canonical amino acids, neutral terminii, neutral canonical AA side chains
 :::
 
 <script>
