@@ -21,6 +21,8 @@ Pablo has a (developing) PDB test suite.
     - disulfide bond between two different protein chains, with additional chains between and after the crosslinked chains
 *   - 2MUM_neutralized.pdb
     - all 20 canonical amino acids, neutral terminii, neutral canonical AA side chains
+*   - 1p3q_noter.pdb
+    - missing ter record between protein chains with same chain id but incompatible terminii, missing ter record between protein chains with different chain id
 :::
 
 <script>

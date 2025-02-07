@@ -1,5 +1,6 @@
 import pytest
 from openff.toolkit import Molecule, Topology
+from openff.toolkit.utils.exceptions import UnassignedChemistryInPDBError
 
 from openff.pablo._pdb import topology_from_pdb
 from openff.pablo._tests.utils import get_test_data_path
@@ -57,6 +58,11 @@ SLOW_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
         [],
         [],
     ),
+    (
+        "prepared_pdbs/1p3q_noter.pdb",
+        [],
+        [],
+    ),
 ]
 
 
@@ -70,11 +76,14 @@ def test_connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches
     unknown_molecules: list[Molecule],
     additional_substructures: list[ResidueDefinition],
 ):
-    connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
-        pdbfile,
-        unknown_molecules,
-        additional_substructures,
-    )
+    try:
+        connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
+            pdbfile,
+            unknown_molecules,
+            additional_substructures,
+        )
+    except UnassignedChemistryInPDBError:
+        pytest.skip("PDB file cannot be loaded by legacy loader")
 
 
 @pytest.mark.parametrize(
@@ -86,11 +95,14 @@ def test_connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches
     unknown_molecules: list[Molecule],
     additional_substructures: list[ResidueDefinition],
 ):
-    connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
-        pdbfile,
-        unknown_molecules,
-        additional_substructures,
-    )
+    try:
+        connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
+            pdbfile,
+            unknown_molecules,
+            additional_substructures,
+        )
+    except UnassignedChemistryInPDBError:
+        pytest.skip("PDB file cannot be loaded by legacy loader")
 
 
 def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
@@ -100,18 +112,18 @@ def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_lega
 ):
     filename = get_test_data_path(pdbfile)
 
-    pablo_top = topology_from_pdb(
-        filename,
-        unknown_molecules=unknown_molecules,
-        additional_substructures=additional_substructures,
-        verbose_errors=True,
-    )
     legacy_top: Topology = Topology.from_pdb(
         filename,
         unique_molecules=unknown_molecules,
         _additional_substructures=[
             resdef.to_openff_molecule() for resdef in additional_substructures
         ],
+    )
+    pablo_top = topology_from_pdb(
+        filename,
+        unknown_molecules=unknown_molecules,
+        additional_substructures=additional_substructures,
+        verbose_errors=True,
     )
 
     assert pablo_top.n_molecules == legacy_top.n_molecules
