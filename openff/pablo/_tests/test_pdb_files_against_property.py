@@ -100,3 +100,7 @@ def test_1p3q_loads_chains_without_ter():
                 start=molecule.atom(0).metadata["pdb_index"],  # type: ignore
             )
         )
+
+
+def test_5EIL_loads_at_all():
+    topology_from_pdb(get_test_data_path("5EIL.pdb"))

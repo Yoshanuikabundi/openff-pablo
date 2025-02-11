@@ -348,8 +348,11 @@ class PdbData:
             ),
         ):
             if alt_loc != "":
-                # TODO: Support alt locs
-                raise ValueError("Alt loc not supported")
+                warnings.warn(
+                    "Alt locs not supported; only empty or 'A' alt locs will be read",
+                )
+                if alt_loc != "A":
+                    continue
             if prev is not None and residue_info[0] != prev[0]:
                 # TODO: Support multi-model files
                 warnings.warn(

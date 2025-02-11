@@ -178,7 +178,12 @@ def int_or_none(s: str) -> int | None:
     if s == "":
         return None
     else:
-        return int(s)
+        if s.endswith("+"):
+            return int(s[:-1])
+        elif s.endswith("-"):
+            return -int(s[:-1])
+        else:
+            return int(s)
 
 
 def cryst_to_box_vectors(
