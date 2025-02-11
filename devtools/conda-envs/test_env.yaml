@@ -38,6 +38,7 @@ dependencies:
   - openff-interchange
   - ambertools
   - numpy
+  - pymol-open-source
 
   - pip:
       - git+https://github.com/openforcefield/openff-toolkit.git@better_typing

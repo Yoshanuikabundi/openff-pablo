@@ -23,6 +23,14 @@ Pablo has a (developing) PDB test suite.
     - all 20 canonical amino acids, neutral terminii, neutral canonical AA side chains
 *   - 1p3q_noter.pdb
     - missing ter record between protein chains with same chain id but incompatible terminii, missing ter record between protein chains with different chain id
+*   - 1hje_samechain.pdb
+    - Disulfide bonds within chain, missing ter record between polymer and non-polymer chains with same chain id, NH2 cap, strained conformation
+*   - 1hje_diffchain.pdb
+    - Disulfide bonds within chain, missing ter record between polymer and non-polymer chains with same different id, NH2 cap, strained conformation
+*   - 1A4T.pdb
+    - NMR model direct from PDB, multi-model file, RNA and protein in same file
+*   - 1a45_samechain.pdb
+    - RNA and protein in same file, missing TER record between incompatible polymers with same chain ID
 :::
 
 <script>

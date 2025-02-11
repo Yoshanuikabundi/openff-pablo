@@ -33,6 +33,16 @@ FAST_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
         [],
     ),
     (
+        "prepared_pdbs/1hje_diffchain.pdb",
+        [],
+        [],
+    ),
+    (
+        "prepared_pdbs/1hje_samechain.pdb",
+        [],
+        [],
+    ),
+    (
         "1UAO.pdb",
         [],
         [],
@@ -76,14 +86,11 @@ def test_connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches
     unknown_molecules: list[Molecule],
     additional_substructures: list[ResidueDefinition],
 ):
-    try:
-        connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
-            pdbfile,
-            unknown_molecules,
-            additional_substructures,
-        )
-    except UnassignedChemistryInPDBError:
-        pytest.skip("PDB file cannot be loaded by legacy loader")
+    connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
+        pdbfile,
+        unknown_molecules,
+        additional_substructures,
+    )
 
 
 @pytest.mark.parametrize(
@@ -95,14 +102,11 @@ def test_connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches
     unknown_molecules: list[Molecule],
     additional_substructures: list[ResidueDefinition],
 ):
-    try:
-        connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
-            pdbfile,
-            unknown_molecules,
-            additional_substructures,
-        )
-    except UnassignedChemistryInPDBError:
-        pytest.skip("PDB file cannot be loaded by legacy loader")
+    connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
+        pdbfile,
+        unknown_molecules,
+        additional_substructures,
+    )
 
 
 def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_legacy(
@@ -112,13 +116,18 @@ def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_lega
 ):
     filename = get_test_data_path(pdbfile)
 
-    legacy_top: Topology = Topology.from_pdb(
-        filename,
-        unique_molecules=unknown_molecules,
-        _additional_substructures=[
-            resdef.to_openff_molecule() for resdef in additional_substructures
-        ],
-    )
+    try:
+        legacy_top: Topology = Topology.from_pdb(
+            filename,
+            unique_molecules=unknown_molecules,
+            _additional_substructures=[
+                resdef.to_openff_molecule() for resdef in additional_substructures
+            ],
+        )
+    except UnassignedChemistryInPDBError as e:
+        # pytest.skip(f"PDB file {pdbfile} cannot be loaded by legacy loader")
+        raise e
+
     pablo_top = topology_from_pdb(
         filename,
         unknown_molecules=unknown_molecules,
