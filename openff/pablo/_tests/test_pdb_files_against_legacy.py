@@ -1,5 +1,6 @@
 import pytest
 from openff.toolkit import Molecule, Topology
+from openff.toolkit.utils.exceptions import UnassignedChemistryInPDBError
 
 from openff.pablo._pdb import topology_from_pdb
 from openff.pablo._tests.utils import get_test_data_path
@@ -32,6 +33,16 @@ FAST_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
         [],
     ),
     (
+        "prepared_pdbs/1hje_diffchain.pdb",
+        [],
+        [],
+    ),
+    (
+        "prepared_pdbs/1hje_samechain.pdb",
+        [],
+        [],
+    ),
+    (
         "1UAO.pdb",
         [],
         [],
@@ -54,6 +65,11 @@ SLOW_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = [
     ),
     (
         "prepared_pdbs/2hi7_prepared.pdb",
+        [],
+        [],
+    ),
+    (
+        "prepared_pdbs/1p3q_noter.pdb",
         [],
         [],
     ),
@@ -100,18 +116,23 @@ def connectivity_and_atom_order_and_net_residue_charge_and_metadata_matches_lega
 ):
     filename = get_test_data_path(pdbfile)
 
+    try:
+        legacy_top: Topology = Topology.from_pdb(
+            filename,
+            unique_molecules=unknown_molecules,
+            _additional_substructures=[
+                resdef.to_openff_molecule() for resdef in additional_substructures
+            ],
+        )
+    except UnassignedChemistryInPDBError as e:
+        pytest.skip(f"PDB file {pdbfile} cannot be loaded by legacy loader")
+        raise e
+
     pablo_top = topology_from_pdb(
         filename,
         unknown_molecules=unknown_molecules,
         additional_substructures=additional_substructures,
         verbose_errors=True,
-    )
-    legacy_top: Topology = Topology.from_pdb(
-        filename,
-        unique_molecules=unknown_molecules,
-        _additional_substructures=[
-            resdef.to_openff_molecule() for resdef in additional_substructures
-        ],
     )
 
     assert pablo_top.n_molecules == legacy_top.n_molecules

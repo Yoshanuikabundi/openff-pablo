@@ -525,6 +525,10 @@ class PdbData:
             name_matches,
             default=(),
         ):
+            if len(this_matches) != 0:
+                logging.debug(
+                    f"Beginning link-based match of {self.res_name[this_matches[0].prototype_index]} {this_matches[0].res_atom_idcs}",
+                )
             neighbours_support_posterior_bond = any(
                 next_match.expect_prior_bond for next_match in next_matches
             )
@@ -544,25 +548,32 @@ class PdbData:
             )
             this_filtered_matches: list[ResidueMatch] = []
             for match in this_matches:
+                logging.debug(
+                    f"  Attempting link-based match against {match.residue_definition.description}",
+                )
                 if len(match.missing_atoms) != 0:
                     prior_bond_mismatched = (
                         match.expect_prior_bond != neighbours_support_prior_bond
                     )
                     if prior_bond_mismatched:
+                        logging.debug("    Prior bond mismatched")
                         continue
 
                     posterior_bond_mismatched = (
                         match.expect_posterior_bond != neighbours_support_posterior_bond
                     )
                     if posterior_bond_mismatched:
+                        logging.debug("    Posterior bond mismatched")
                         continue
 
                     this_filtered_matches.append(match)
+                    logging.debug("    Accepted")
                 elif (
                     neighbours_support_molecule_end
                     and neighbours_support_molecule_start
                 ):
                     this_filtered_matches.append(match)
+                    logging.debug("    Accepted as non-polymer")
 
             linkage_matches.append(this_filtered_matches)
             prev_filtered_matches = this_filtered_matches

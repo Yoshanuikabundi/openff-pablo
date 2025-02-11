@@ -26,6 +26,7 @@ __all__ = [
     "add_dephosphorylated_5p_terminus",
     "patch_his_sidechain_zwitterion",
     "delete_doubly_deprotonated_arginine",
+    "add_nh2_leaving_atom",
 ]
 
 
@@ -502,3 +503,19 @@ def delete_doubly_deprotonated_arginine(
         return []
     else:
         return [res]
+
+
+def add_nh2_leaving_atom(
+    res: ResidueDefinition,
+) -> list[ResidueDefinition]:
+    return [
+        res.replace(
+            atoms=[
+                *res.atoms,
+                AtomDefinition.with_defaults(name="H3", symbol="H", leaving=True),
+            ],
+            bonds=[*res.bonds, BondDefinition.with_defaults(atom1="H3", atom2="N")],
+            description=res.description + " +H3",
+        ),
+        res,
+    ]

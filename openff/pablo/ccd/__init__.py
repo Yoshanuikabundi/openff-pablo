@@ -15,6 +15,7 @@ from ._ccdcache import CcdCache
 from .patches import (
     add_dephosphorylated_5p_terminus,
     add_disulfide_crosslink,
+    add_nh2_leaving_atom,
     add_protonation_variants,
     add_synonyms,
     delete_doubly_deprotonated_arginine,
@@ -38,6 +39,7 @@ CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
         {
             "ACE": fix_caps,
             "NME": fix_caps,
+            "NH2": fix_caps,
             "CYS": add_disulfide_crosslink,
         },
         {"*": add_protonation_variants},
@@ -50,6 +52,7 @@ CCD_RESIDUE_DEFINITION_CACHE: CcdCache = CcdCache(
             "DG": add_dephosphorylated_5p_terminus,
             "DC": add_dephosphorylated_5p_terminus,
             "DA": add_dephosphorylated_5p_terminus,
+            "NH2": add_nh2_leaving_atom,
         },
         {
             "U": set_hop3_leaving,
