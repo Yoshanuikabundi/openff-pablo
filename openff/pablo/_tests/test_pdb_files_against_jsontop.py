@@ -13,6 +13,18 @@ FAST_PDBS: list[tuple[str, str, list[Molecule], list[ResidueDefinition]]] = [
         [],
         [],
     ),
+    (
+        "1A4T.pdb",
+        "1A4T.json",
+        [],
+        [],
+    ),
+    (
+        "prepared_pdbs/1a4t_samechain.pdb",
+        "1A4T.json",
+        [],
+        [],
+    ),
 ]
 SLOW_PDBS: list[tuple[str, list[Molecule], list[ResidueDefinition]]] = []
 

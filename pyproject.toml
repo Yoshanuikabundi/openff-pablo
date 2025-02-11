@@ -88,7 +88,7 @@ reportAny = "information"
 reportMissingTypeStubs = "none"
 reportUnnecessaryIsInstance = "none"
 reportUnnecessaryTypeIgnoreComment = "error"
-reportPrivateUsage = "information"
+reportPrivateUsage = "none"
 reportMissingTypeArgument = "none"
 
 strictGenericNarrowing = true

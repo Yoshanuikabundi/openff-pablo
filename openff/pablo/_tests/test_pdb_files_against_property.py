@@ -69,3 +69,34 @@ def test_2mum_neutralized_has_all_neutral_aas(all_aa_resnames: set[str]):
         atom.formal_charge.m_as("elementary_charge")
         for atom in topology.atoms  # type: ignore
     } == {0}
+
+
+@pytest.mark.slow
+def test_1p3q_loads_chains_without_ter():
+    pdbfn = get_test_data_path("prepared_pdbs/1p3q_noter.pdb")
+    topology = topology_from_pdb(pdbfn)
+
+    # Correct number of molecules
+    assert topology.n_molecules == 5
+    # Correct number of chains loaded in correct order
+    assert [elem.identifier[0] for elem in topology.chains] == ["A", "A", "B", "C", "D"]
+    # Chains belong to correct molecules
+    assert all(
+        elem.scheme.parent is topology.molecule(mol_idx)
+        for elem, mol_idx in zip(topology.chains, [0, 1, 2, 3, 4])
+    )
+    # All molecules represent a single molecule
+    assert not topology.molecule(0)._has_multiple_molecules()  # type: ignore
+    assert not topology.molecule(1)._has_multiple_molecules()  # type: ignore
+    assert not topology.molecule(2)._has_multiple_molecules()  # type: ignore
+    assert not topology.molecule(3)._has_multiple_molecules()  # type: ignore
+    assert not topology.molecule(4)._has_multiple_molecules()  # type: ignore
+    # All molecule's pdb_index values are contiguous
+    for molecule in topology.molecules:
+        assert all(
+            i == atom.metadata["pdb_index"]
+            for i, atom in enumerate(
+                molecule.atoms,
+                start=molecule.atom(0).metadata["pdb_index"],  # type: ignore
+            )
+        )
