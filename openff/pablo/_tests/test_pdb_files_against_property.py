@@ -261,3 +261,11 @@ def test_3ip9_loads_with_additional_residue():
             pablo_res_charge += pablo_atom.formal_charge  # type:ignore
             legacy_res_charge += legacy_atom.formal_charge  # type:ignore
         assert pablo_res_charge == legacy_res_charge
+
+
+@pytest.mark.xfail
+def test_cannot_load_arg_alternate_resonance_form():
+    """One day this will pass, but not just yet"""
+    topology_from_pdb(
+        get_test_data_path("capped_arg_altresonance.pdb"),
+    )
