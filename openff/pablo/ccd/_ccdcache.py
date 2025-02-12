@@ -1,7 +1,9 @@
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from copy import deepcopy
 from io import StringIO
 from pathlib import Path
-from typing import no_type_check
+from typing import Self, no_type_check
+from collections.abc import Sequence
 from urllib.request import urlopen
 
 import xdg.BaseDirectory as xdg_base_dir
@@ -289,6 +291,16 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
 
     def __len__(self) -> int:
         return self._definitions.__len__()
+
+    def with_(
+        self,
+        extra_definitions: Mapping[str, Sequence[ResidueDefinition]],
+    ) -> Self:
+        new = deepcopy(self)
+        for resname, resdefs in extra_definitions.items():
+            new._extra_definitions_set = True
+            new._add_definitions(resdefs, resname)
+        return new
 
 
 # TODO: Fill in this data

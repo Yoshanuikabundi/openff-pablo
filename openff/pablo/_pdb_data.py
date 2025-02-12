@@ -348,8 +348,11 @@ class PdbData:
             ),
         ):
             if alt_loc != "":
-                # TODO: Support alt locs
-                raise ValueError("Alt loc not supported")
+                warnings.warn(
+                    "Alt locs not supported; only empty or 'A' alt locs will be read",
+                )
+                if alt_loc != "A":
+                    continue
             if prev is not None and residue_info[0] != prev[0]:
                 # TODO: Support multi-model files
                 warnings.warn(
@@ -556,14 +559,20 @@ class PdbData:
                         match.expect_prior_bond != neighbours_support_prior_bond
                     )
                     if prior_bond_mismatched:
-                        logging.debug("    Prior bond mismatched")
+                        logging.debug("    Match failed: Prior bond mismatched")
+                        logging.debug(
+                            f"    {match.expect_prior_bond=} but {neighbours_support_prior_bond=}",
+                        )
                         continue
 
                     posterior_bond_mismatched = (
                         match.expect_posterior_bond != neighbours_support_posterior_bond
                     )
                     if posterior_bond_mismatched:
-                        logging.debug("    Posterior bond mismatched")
+                        logging.debug("    Match failed: Posterior bond mismatched")
+                        logging.debug(
+                            f"    {match.expect_posterior_bond=} but {neighbours_support_posterior_bond=}",
+                        )
                         continue
 
                     this_filtered_matches.append(match)
