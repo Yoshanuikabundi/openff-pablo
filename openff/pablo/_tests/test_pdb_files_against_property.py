@@ -102,5 +102,24 @@ def test_1p3q_loads_chains_without_ter():
         )
 
 
-def test_5EIL_loads_at_all():
-    topology_from_pdb(get_test_data_path("5EIL.pdb"))
+def test_5eil_is_three_proteins_with_ncaa_plus_water():
+    topology = topology_from_pdb(
+        get_test_data_path("prepared_pdbs/5eil_fixed.pdb"),
+        verbose_errors=True,
+    )
+
+    protein_a = topology.molecule(0)
+    protein_b = topology.molecule(1)
+    protein_c = topology.molecule(2)
+
+    fe = topology.molecule(3)
+    assert [atom.symbol for atom in fe.atoms] == ["Fe"]
+    assert all([mol.n_atoms == 3 for mol in topology.molecules][4:])
+
+    assert not protein_a._has_multiple_molecules()  # type: ignore
+    assert not protein_b._has_multiple_molecules()  # type: ignore
+    assert not protein_c._has_multiple_molecules()  # type: ignore
+
+    assert "BP5" in [res.identifier[3] for res in protein_a.residues]
+    assert "BP5" in [res.identifier[3] for res in protein_b.residues]
+    assert "BP5" in [res.identifier[3] for res in protein_c.residues]
