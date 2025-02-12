@@ -100,7 +100,13 @@ proton. A variant residue definition is created with that atom and bond added,
 and the formal charge of the atom increased by one."""
 
 ATOM_NAME_SYNONYMS = {
-    "NME": {"HN2": ["H"]},
+    "NME": {
+        "HN2": ["H"],
+        "C": ["CH3"],
+        "H1": ["1HH3"],
+        "H2": ["2HH3"],
+        "H3": ["3HH3"],
+    },
     "NA": {"NA": ["Na"]},
     "CL": {"CL": ["Cl"]},
     "ALA": {"H": ["H1"]},
