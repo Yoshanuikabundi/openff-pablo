@@ -34,7 +34,9 @@ Pablo has a (developing) PDB test suite.
 *   - 2MUM_blowup.pdb
     - Strained conformation
 *   - 5eil_fixed.pdb
-    - Non-canonical amino acid from PDB, iron ion
+    - Non-canonical amino acid from CCD, iron ion
+*   - 3ip9_dye_solvated.pdb
+    - Large system with water and NaCl, non-canonical amino acid not in CCD
 :::
 
 <script>
