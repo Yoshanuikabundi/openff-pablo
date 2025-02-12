@@ -31,6 +31,10 @@ Pablo has a (developing) PDB test suite.
     - NMR model direct from PDB, multi-model file, RNA and protein in same file
 *   - 1a45_samechain.pdb
     - RNA and protein in same file, missing TER record between incompatible polymers with same chain ID
+*   - 2MUM_blowup.pdb
+    - Strained conformation
+*   - 5EIL.pdb
+    - Non-canonical amino acid from PDB
 :::
 
 <script>
