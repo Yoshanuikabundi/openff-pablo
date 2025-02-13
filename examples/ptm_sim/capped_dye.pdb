@@ -1,0 +1,136 @@
+CRYST1   82.948   82.948   82.948  90.00  90.00  90.00 P 1           1
+HETATM    1  C   ACE A 177      30.438  18.747  31.018  1.00  0.00           C
+HETATM    2  O   ACE A 177      30.247  18.008  31.993  1.00  0.00           O
+HETATM    3  CH3 ACE A 177      30.621  18.174  29.629  1.00  0.00           C
+HETATM    4 1HH3 ACE A 177      29.743  17.612  29.342  1.00  0.00           H
+HETATM    5 2HH3 ACE A 177      30.774  18.971  28.917  1.00  0.00           H
+HETATM    6 3HH3 ACE A 177      31.478  17.518  29.610  1.00  0.00           H
+HETATM    7  N   DYE A 178      30.482  20.025  31.188  1.00  0.00           N
+HETATM    8  CA  DYE A 178      30.308  20.597  32.520  1.00  0.00           C
+HETATM    9  C   DYE A 178      31.641  20.951  33.136  1.00  0.00           C
+HETATM   10  O   DYE A 178      31.667  21.686  34.154  1.00  0.00           O
+HETATM   11  CB  DYE A 178      29.509  19.598  33.381  1.00  0.00           C
+HETATM   12  SG  DYE A 178      29.187  20.283  35.022  1.00  0.00           S
+HETATM   13  C1x DYE A 178      30.627  19.611  35.893  1.00  0.00           C
+HETATM   14  N1x DYE A 178      29.937  18.395  37.861  1.00  0.00           N
+HETATM   15  O1x DYE A 178      29.978  20.203  39.312  1.00  0.00           O
+HETATM   16  C2x DYE A 178      30.816  20.521  37.107  1.00  0.00           C
+HETATM   17  O2x DYE A 178      25.165  16.729  40.596  1.00  0.00           O
+HETATM   18  C3x DYE A 178      30.171  19.708  38.212  1.00  0.00           C
+HETATM   19  O3x DYE A 178      26.655  17.015  42.324  1.00  0.00           O
+HETATM   20  C4x DYE A 178      29.249  17.432  38.624  1.00  0.00           C
+HETATM   21  O4x DYE A 178      22.066  12.244  39.389  1.00  0.00           O
+HETATM   22  C5x DYE A 178      29.623  16.070  38.579  1.00  0.00           C
+HETATM   23  O5x DYE A 178      25.378  12.912  42.719  1.00  0.00           O
+HETATM   24  C6x DYE A 178      28.933  15.104  39.323  1.00  0.00           C
+HETATM   25  O6x DYE A 178      28.205  13.764  46.456  1.00  0.00           O
+HETATM   26  C7x DYE A 178      27.847  15.510  40.102  1.00  0.00           C
+HETATM   27  O7x DYE A 178      30.290  17.238  35.876  1.00  0.00           O
+HETATM   28  C8x DYE A 178      27.455  16.821  40.153  1.00  0.00           C
+HETATM   29  C9x DYE A 178      28.151  17.795  39.433  1.00  0.00           C
+HETATM   30 C10x DYE A 178      26.304  16.851  41.023  1.00  0.00           C
+HETATM   31 C11x DYE A 178      26.957  14.671  40.980  1.00  0.00           C
+HETATM   32 C12x DYE A 178      25.637  14.051  40.571  1.00  0.00           C
+HETATM   33 C13x DYE A 178      25.104  14.296  39.292  1.00  0.00           C
+HETATM   34 C14x DYE A 178      23.908  13.692  38.893  1.00  0.00           C
+HETATM   35 C15x DYE A 178      23.232  12.845  39.766  1.00  0.00           C
+HETATM   36 C16x DYE A 178      23.751  12.607  41.035  1.00  0.00           C
+HETATM   37 C17x DYE A 178      24.945  13.201  41.451  1.00  0.00           C
+HETATM   38 C18x DYE A 178      26.477  13.571  43.213  1.00  0.00           C
+HETATM   39 C19x DYE A 178      26.799  13.347  44.553  1.00  0.00           C
+HETATM   40 C20x DYE A 178      27.893  13.977  45.144  1.00  0.00           C
+HETATM   41 C21x DYE A 178      28.679  14.836  44.386  1.00  0.00           C
+HETATM   42 C22x DYE A 178      28.375  15.068  43.043  1.00  0.00           C
+HETATM   43 C23x DYE A 178      27.268  14.439  42.443  1.00  0.00           C
+HETATM   44 C24x DYE A 178      30.295  18.269  36.535  1.00  0.00           C
+HETATM   45  H   DYE A 178      30.618  20.640  30.398  1.00  0.00           H
+HETATM   46  HA  DYE A 178      29.731  21.535  32.423  1.00  0.00           H
+HETATM   47 2HB  DYE A 178      30.044  18.632  33.484  1.00  0.00           H
+HETATM   48 3HB  DYE A 178      28.535  19.360  32.916  1.00  0.00           H
+HETATM   49  H1x DYE A 178      31.529  19.553  35.276  1.00  0.00           H
+HETATM   50  H2x DYE A 178      31.875  20.681  37.328  1.00  0.00           H
+HETATM   51  H3x DYE A 178      30.323  21.490  36.986  1.00  0.00           H
+HETATM   52  H4x DYE A 178      30.460  15.755  37.965  1.00  0.00           H
+HETATM   53  H5x DYE A 178      29.228  14.059  39.293  1.00  0.00           H
+HETATM   54  H6x DYE A 178      27.817  18.826  39.501  1.00  0.00           H
+HETATM   55  H7x DYE A 178      25.625  14.951  38.600  1.00  0.00           H
+HETATM   56  H8x DYE A 178      23.516  13.889  37.901  1.00  0.00           H
+HETATM   57  H9x DYE A 178      21.836  12.510  38.482  1.00  0.00           H
+HETATM   58 H10x DYE A 178      23.214  11.949  41.710  1.00  0.00           H
+HETATM   59 H11x DYE A 178      26.174  12.673  45.131  1.00  0.00           H
+HETATM   60 H13x DYE A 178      29.531  15.325  44.848  1.00  0.00           H
+HETATM   61 H14x DYE A 178      29.003  15.742  42.470  1.00  0.00           H
+HETATM   62  N   NME A 179      32.737  20.504  32.624  1.00  0.00           N
+HETATM   63  CH3 NME A 179      34.014  20.851  33.225  1.00  0.00           C
+HETATM   64  H   NME A 179      32.709  19.914  31.805  1.00  0.00           H
+HETATM   65 1HH3 NME A 179      34.335  21.821  32.876  1.00  0.00           H
+HETATM   66 2HH3 NME A 179      33.920  20.879  34.301  1.00  0.00           H
+HETATM   67 3HH3 NME A 179      34.760  20.118  32.956  1.00  0.00           H
+CONECT    1    2    3    7
+CONECT    2    1
+CONECT    3    1    4    5    6
+CONECT    4    3
+CONECT    5    3
+CONECT    6    3
+CONECT    7    1    8   45
+CONECT    8    7    9   11   46
+CONECT    9    8   10   62
+CONECT   10    9
+CONECT   11    8   12   47   48
+CONECT   12   11   13
+CONECT   13   12   16   44   49
+CONECT   14   18   20   44
+CONECT   15   18
+CONECT   16   13   18   50   51
+CONECT   17   30
+CONECT   18   14   15   16
+CONECT   19   30
+CONECT   20   14   22   29
+CONECT   21   35   57
+CONECT   22   20   24   52
+CONECT   23   37   38
+CONECT   24   22   26   53
+CONECT   25   40
+CONECT   26   24   28   31
+CONECT   27   44
+CONECT   28   26   29   30
+CONECT   29   20   28   54
+CONECT   30   17   19   28
+CONECT   31   26   32   43
+CONECT   32   31   33   37
+CONECT   33   32   34   55
+CONECT   34   33   35   56
+CONECT   35   21   34   36
+CONECT   36   35   37   58
+CONECT   37   23   32   36
+CONECT   38   23   39   43
+CONECT   39   38   40   59
+CONECT   40   25   39   41
+CONECT   41   40   42   60
+CONECT   42   41   43   61
+CONECT   43   31   38   42
+CONECT   44   13   14   27
+CONECT   45    7
+CONECT   46    8
+CONECT   47   11
+CONECT   48   11
+CONECT   49   13
+CONECT   50   16
+CONECT   51   16
+CONECT   52   22
+CONECT   53   24
+CONECT   54   29
+CONECT   55   33
+CONECT   56   34
+CONECT   57   21
+CONECT   58   36
+CONECT   59   39
+CONECT   60   41
+CONECT   61   42
+CONECT   62    9   63   64
+CONECT   63   62   65   66   67
+CONECT   64   62
+CONECT   65   63
+CONECT   66   63
+CONECT   67   63
+END
