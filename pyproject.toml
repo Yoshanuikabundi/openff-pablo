@@ -96,6 +96,9 @@ strictGenericNarrowing = true
 [tool.ruff]
 namespace-packages = ["openff/pablo/"]
 
+[tool.ruff.lint]
+ignore = ["E731"]
+
 [tool.ruff.lint.isort]
 known-third-party = ["openff.toolkit", "openff.utilities", "openff.units"]
 known-first-party = ["openff.pablo"]
