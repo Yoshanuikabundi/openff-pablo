@@ -536,7 +536,8 @@ class ResidueDefinition:
                 name=atom.name,
                 metadata={
                     "residue_name": self.residue_name,
-                    "leaving": atom.leaving,
+                    "leaving_atom": atom.leaving,
+                    "substructure_atom": not atom.leaving,
                 },
             )
 
