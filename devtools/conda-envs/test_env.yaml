@@ -39,7 +39,7 @@ dependencies:
   - ambertools
   - numpy
   - pymol-open-source
-  - openff-nagl-base >= 0.5.1
+  - openff-nagl-base >= 0.5.2
   - openff-nagl-models
   - pytorch-cpu >= 2.6
 

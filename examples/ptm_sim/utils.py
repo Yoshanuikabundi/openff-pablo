@@ -1,12 +1,13 @@
 import math
+from collections.abc import Sequence
 from copy import deepcopy
 from pathlib import Path
-from collections.abc import Sequence
 
 import openmm
 import openmm.app
 import openmm.unit
-from openff.toolkit import ForceField, Quantity, Topology, unit
+from openff.toolkit import ForceField, Quantity, Topology
+from openff.toolkit.utils.toolkits import NAGLToolkitWrapper
 
 from openff.interchange import Interchange
 from openff.interchange.components.potentials import Potential
@@ -16,8 +17,6 @@ from openff.interchange.models import (
     PotentialKey,
     SingleAtomChargeTopologyKey,
 )
-from openff.nagl import GNNModel
-from openff.nagl_models import validate_nagl_model_path
 from openff.pablo._utils import draw_molecule
 
 __all__ = [
@@ -153,21 +152,9 @@ def parametrize_with_nagl(
     protein = topology.molecule(0)
 
     print("assigning graph charges ...")
-    # protein.assign_partial_charges(
-    #     partial_charge_method=nagl_method,
-    #     toolkit_registry=NAGLToolkitWrapper(),
-    # )
-
-    nagl_path = validate_nagl_model_path(model=nagl_method)
-    model = GNNModel.load(nagl_path, eval_mode=True, weights_only=False)
-    charges = model.compute_property(
-        protein,
-        as_numpy=True,
-        error_if_unsupported=True,
-    )
-    protein.partial_charges = Quantity(
-        charges.astype(float),
-        unit.elementary_charge,
+    protein.assign_partial_charges(
+        partial_charge_method=nagl_method,
+        toolkit_registry=NAGLToolkitWrapper(),
     )
 
     print("making Interchange ...")
