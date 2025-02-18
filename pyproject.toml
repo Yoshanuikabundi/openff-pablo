@@ -42,6 +42,7 @@ doc = [
 # documentation = "https://openff-pablo.readthedocs.io"
 
 [tool.versioningit]
+default-version = "VERSION_MISSING"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
