@@ -142,7 +142,6 @@ def parametrize_with_nagl(
     nagl_method: str = "openff-gnn-am1bcc-0.1.0-rc.3.pt",
     allow_nonintegral_charges: bool = False,
 ) -> Interchange:
-    """The protein has to be the first molecule"""
     print("adding dummy charges to force field ...")
     ff = deepcopy(force_field)
     # Add a dummy 0.0 library charge at the _top_ so it's only used as a last resort
@@ -155,19 +154,16 @@ def parametrize_with_nagl(
         before=0,  # "[#3+1:1]",
     )
 
-    protein = topology.molecule(0)
-
-    print("assigning graph charges ...")
-    protein.assign_partial_charges(
-        partial_charge_method=nagl_method,
-        toolkit_registry=NAGLToolkitWrapper(),
-    )
-
     print("making Interchange ...")
     interchange: Interchange = ff.create_interchange(
         topology,
         allow_nonintegral_charges=True,
     )
+
+    # Remove any assigned charges from Interchange so that assigned charges
+    # only come from NAGL
+    for molecule in interchange.topology.molecules:
+        molecule._partial_charges = None
 
     potential_keys_to_remove = list()
     topology_keys_to_remove = list()
@@ -184,6 +180,21 @@ def parametrize_with_nagl(
             # only modify charges where dummy placeholder of 0.0 was assigned from "[*:1]" parameter
             index = key.atom_indices[0]
 
+            # If we haven't seen this molecule before, we need to calculate its
+            # partial charges
+            atom = interchange.topology.atom(index)
+            molecule = atom.molecule
+            index_in_molecule = atom.molecule_atom_index
+            if molecule.partial_charges is None:
+                print(
+                    f"assigning graph charges to {molecule.name or molecule.hill_formula} ..."
+                )
+                molecule.assign_partial_charges(
+                    partial_charge_method=nagl_method,
+                    toolkit_registry=NAGLToolkitWrapper(),
+                )
+                print("continuing with dummy charge replacement ...")
+
             # must make new "single atom" topology key for each atom since the current
             # 1:many representation from the dummy charge is no longer valid
             new_potential_key = PotentialKey(
@@ -191,9 +202,9 @@ def parametrize_with_nagl(
                 associated_handler="molecules_with_preset_charges",
                 mult=index,
             )
-            # TODO: Compute graph charges as-needed here
+            # Place this atom's NAGL charge in its own potential
             new_potential = Potential(
-                parameters={"charge": protein.partial_charges[index]}
+                parameters={"charge": molecule.partial_charges[index_in_molecule]}
             )
 
             interchange["Electrostatics"].key_map[
