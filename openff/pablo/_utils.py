@@ -331,7 +331,19 @@ def draw_molecule(
     """
 
     @no_type_check
-    def inner():
+    def inner(
+        molecule: Molecule | rdkit.Chem.rdchem.Mol,
+        *,
+        width: int = 500,
+        height: int = 500,
+        highlight_atoms: list[int] | dict[int, Color] | None = None,
+        highlight_bonds: None | (list[BondIndices] | dict[BondIndices, Color]) = None,
+        atom_notes: dict[int, str] | None = None,
+        bond_notes: dict[BondIndices, str] | None = None,
+        emphasize_atoms: list[int] | None = None,
+        explicit_hydrogens: bool | None = None,
+        color_by_element: bool | None = None,
+    ):
         # We're working in RDKit
         try:
             rdmol = rdkit.Chem.rdchem.Mol(molecule.to_rdkit())
@@ -339,7 +351,7 @@ def draw_molecule(
             rdmol = rdkit.Chem.rdchem.Mol(molecule)
 
         # Process color_by_element argument
-        if color_by_element is None:  # noqa: F823
+        if color_by_element is None:
             color_by_element = highlight_atoms is None and highlight_bonds is None
 
         if color_by_element:
@@ -484,4 +496,15 @@ def draw_molecule(
         svg_contents = drawer.GetDrawingText()
         return SVG(svg_contents)
 
-    return inner()
+    return inner(
+        molecule,
+        width=width,
+        height=height,
+        highlight_atoms=highlight_atoms,
+        highlight_bonds=highlight_bonds,
+        atom_notes=atom_notes,
+        bond_notes=bond_notes,
+        emphasize_atoms=emphasize_atoms,
+        explicit_hydrogens=explicit_hydrogens,
+        color_by_element=color_by_element,
+    )
