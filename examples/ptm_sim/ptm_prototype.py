@@ -207,6 +207,7 @@ def parametrize_with_nagl(
                 parameters={"charge": molecule.partial_charges[index_in_molecule]}
             )
 
+            # Add the new potential and key to the interchange
             interchange["Electrostatics"].key_map[
                 SingleAtomChargeTopologyKey(this_atom_index=index)
             ] = new_potential_key
@@ -259,7 +260,7 @@ def react(
     reaction_smarts: str,
 ) -> Iterable[tuple[Molecule, ...]]:
     # Convert reactants to rdmol, storing metadata as properties
-    # Need to keep metadata around to identify leaving atoms and synonyms
+    # Need to preserve metadata so we can identify leaving atoms and synonyms
     reactant_rdmols = [reactant.to_rdkit() for reactant in reactants]
     for reactant_rdmol, reactant_offmol in zip(reactant_rdmols, reactants):
         for reactant_rdatom, reactant_offatom in zip(
