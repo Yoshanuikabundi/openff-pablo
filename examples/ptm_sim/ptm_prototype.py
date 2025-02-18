@@ -92,12 +92,9 @@ def smear_charges(
         [interchange.topology.atom(i).formal_charge for i in topology_indices]
     )
 
-    charge_to_smear = (
-        get_charge_sum(interchange, topology_indices)
-        - total_formal_charge_of_topology_indices
-    )
-
     initial_charge_sum = get_charge_sum(interchange, topology_indices)
+
+    charge_to_smear = initial_charge_sum - total_formal_charge_of_topology_indices
 
     per_atom_difference = charge_to_smear / len(topology_indices)
 
@@ -113,10 +110,13 @@ def smear_charges(
 
     new_charge_sum = get_charge_sum(interchange, topology_indices)
 
-    assert math.isclose((initial_charge_sum - new_charge_sum).m, charge_to_smear.m)
+    assert math.isclose(
+        (initial_charge_sum - new_charge_sum).m,
+        charge_to_smear.m,
+    )
 
     assert math.isclose(
-        get_charge_sum(interchange, topology_indices).m,
+        new_charge_sum.m,
         total_formal_charge_of_topology_indices.m,
         abs_tol=1e-10,
         rel_tol=0,
