@@ -18,7 +18,6 @@ from openff.pablo._utils import __UNSET__, unwrap
 __all__ = [
     "AtomDefinition",
     "BondDefinition",
-    "ResidueDefinition",
 ]
 
 _residue_definition_skip_validation = False
