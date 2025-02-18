@@ -382,10 +382,11 @@ class ResidueDefinition:
 
         atoms: list[AtomDefinition] = []
         for atom in molecule.atoms:
+            synonyms_str = str(atom.metadata.get("synonyms", ""))
             atoms.append(
                 AtomDefinition(
                     name=atom.name,
-                    synonyms=(),
+                    synonyms=tuple(synonyms_str.split()),
                     symbol=atom.symbol,
                     leaving=bool(atom.metadata.get("leaving_atom")),
                     charge=atom.formal_charge.m_as(unit.elementary_charge),  # type: ignore
@@ -538,6 +539,7 @@ class ResidueDefinition:
                     "residue_name": self.residue_name,
                     "leaving_atom": atom.leaving,
                     "substructure_atom": not atom.leaving,
+                    "synonyms": " ".join(atom.synonyms),
                 },
             )
 
