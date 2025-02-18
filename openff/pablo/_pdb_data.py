@@ -428,13 +428,14 @@ class PdbData:
             logging.debug("    Match failed: Element mismatch")
             return None
 
-        # Check that charges match, but tolerate missing columns
-        if any(
-            self.charge[i] is not None and self.charge[i] != atom.charge
-            for i, atom in index_to_atomdef.items()
-        ):
-            logging.debug("    Match failed: Charge mismatch")
-            return None
+        # PDB files can not be trusted; ignore charges.
+        # # Check that charges match, but tolerate missing columns
+        # if any(
+        #     self.charge[i] is not None and self.charge[i] != atom.charge
+        #     for i, atom in index_to_atomdef.items()
+        # ):
+        #     logging.debug("    Match failed: Charge mismatch")
+        #     return None
 
         missing_atoms = [
             atom for atom in residue_definition.atoms if atom.name not in matched_atoms

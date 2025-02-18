@@ -269,3 +269,12 @@ def test_cannot_load_arg_alternate_resonance_form():
     topology_from_pdb(
         get_test_data_path("capped_arg_altresonance.pdb"),
     )
+
+
+@pytest.mark.xfail
+def test_misplaced_ter_with_custom_resdef_gives_clear_error():
+    """This needs a clearer error"""
+    with pytest.raises(ValueError):
+        topology_from_pdb(
+            get_test_data_path("capped_ser_extrater.pdb"),
+        )

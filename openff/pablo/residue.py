@@ -18,7 +18,6 @@ from openff.pablo._utils import __UNSET__, unwrap
 __all__ = [
     "AtomDefinition",
     "BondDefinition",
-    "ResidueDefinition",
 ]
 
 _residue_definition_skip_validation = False
@@ -382,10 +381,11 @@ class ResidueDefinition:
 
         atoms: list[AtomDefinition] = []
         for atom in molecule.atoms:
+            synonyms_str = str(atom.metadata.get("synonyms", ""))
             atoms.append(
                 AtomDefinition(
                     name=atom.name,
-                    synonyms=(),
+                    synonyms=tuple(synonyms_str.split()),
                     symbol=atom.symbol,
                     leaving=bool(atom.metadata.get("leaving_atom")),
                     charge=atom.formal_charge.m_as(unit.elementary_charge),  # type: ignore
@@ -536,7 +536,9 @@ class ResidueDefinition:
                 name=atom.name,
                 metadata={
                     "residue_name": self.residue_name,
-                    "leaving": atom.leaving,
+                    "leaving_atom": atom.leaving,
+                    "substructure_atom": not atom.leaving,
+                    "synonyms": " ".join(atom.synonyms),
                 },
             )
 
