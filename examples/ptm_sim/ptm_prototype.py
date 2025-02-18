@@ -2,12 +2,16 @@ import math
 from collections.abc import Sequence
 from copy import deepcopy
 from pathlib import Path
+from collections.abc import Iterable
 
 import openmm
 import openmm.app
 import openmm.unit
-from openff.toolkit import ForceField, Quantity, Topology
+import rdkit
+from openff.toolkit import ForceField, Molecule, Quantity, Topology
+from openff.toolkit.utils.exceptions import InvalidAtomMetadataError
 from openff.toolkit.utils.toolkits import NAGLToolkitWrapper
+from rdkit.Chem.rdChemReactions import ReactionFromSmarts
 
 from openff.interchange import Interchange
 from openff.interchange.components.potentials import Potential
@@ -21,6 +25,9 @@ from openff.pablo._utils import draw_molecule
 
 __all__ = [
     "draw_molecule",
+    "nglview_show_openmm",
+    "react",
+    "get_openmm_total_charge",
 ]
 
 
@@ -119,7 +126,7 @@ def smear_charges(
     return interchange
 
 
-def get_total_charge(system: openmm.System) -> float:
+def get_openmm_total_charge(system: openmm.System) -> float:
     for force in system.getForces():
         if isinstance(force, openmm.NonbondedForce):
             return sum(
@@ -235,3 +242,88 @@ def parametrize_with_nagl(
             )
 
     return interchange
+
+
+def react(
+    reactants: Sequence[Molecule],
+    reaction_smarts: str,
+) -> Iterable[tuple[Molecule, ...]]:
+    # Convert reactants to rdmol, storing metadata as properties
+    # Need to keep metadata around to identify leaving atoms and synonyms
+    reactant_rdmols = [reactant.to_rdkit() for reactant in reactants]
+    for reactant_rdmol, reactant_offmol in zip(reactant_rdmols, reactants):
+        for reactant_rdatom, reactant_offatom in zip(
+            reactant_rdmol.GetAtoms(), reactant_offmol.atoms
+        ):
+            for key, value in reactant_offatom.metadata.items():
+                if isinstance(value, bool):
+                    reactant_rdatom.SetBoolProp(key, value)
+                elif isinstance(value, int):
+                    reactant_rdatom.SetIntProp(key, value)
+                elif isinstance(value, float):
+                    reactant_rdatom.SetDoubleProp(key, value)
+                else:
+                    reactant_rdatom.SetProp(key, str(value))
+
+    # Prepare the reaction
+    rxn = ReactionFromSmarts(reaction_smarts)
+    product_rdmols = rxn.RunReactants(reactant_rdmols)
+
+    # Get map from reaction SMARTS atom mappings to the equivalent OFF atom
+    map_to_offatom = {}
+    for reactant_rdmol, reactant_offmol in zip(reactant_rdmols, reactants):
+        assert rxn.IsMoleculeReactant(reactant_rdmol)
+        for reactant_template in rxn.GetReactants():
+            map_to_offatom.update(
+                {
+                    reactant_template.GetAtomWithIdx(query).GetProp(
+                        "molAtomMapNumber"
+                    ): reactant_offmol.atom(match)
+                    for query, match in enumerate(
+                        reactant_rdmol.GetSubstructMatch(reactant_template)
+                    )
+                }
+            )
+
+    # Process and yield the products
+    for products in product_rdmols:
+        # Skip products that cannot be sanitized
+        try:
+            for product in products:
+                product.UpdatePropertyCache()
+                rdkit.Chem.SanitizeMol(product)
+        except rdkit.MolSanitizeException:
+            continue
+
+        product_offmols = [Molecule.from_rdkit(product) for product in products]
+
+        # Fix metadata of products
+        for product_template in rxn.GetProducts():
+            for product_rdmol, product_offmol in zip(products, product_offmols):
+                # Go over atoms changed in the reaction and fix their metadata (rdkit often loses it)
+                for product_idx, product_template_idx in enumerate(
+                    product_rdmol.GetSubstructMatch(product_template)
+                ):
+                    product_rdatom = product_rdmol.GetAtomWithIdx(product_idx)
+                    product_offatom = product_offmol.atom(product_idx)
+
+                    rxn_map = product_rdatom.GetProp("old_mapno")
+                    reactant_offatom = map_to_offatom[rxn_map]
+                    product_offatom.metadata.update(reactant_offatom.metadata)
+                    if "leaving_atom" in product_offatom.metadata:
+                        product_offatom.metadata["leaving_atom"] = False
+                    if "substructure_atom" in product_offatom.metadata:
+                        product_offatom.metadata["substructure_atom"] = True
+                    product_offatom.name = reactant_offatom.name
+
+                # Copy the props back to the metadata
+                for product_rdatom, product_offatom in zip(
+                    product_rdmol.GetAtoms(), product_offmol.atoms
+                ):
+                    for key, value in product_rdatom.GetPropsAsDict().items():
+                        try:
+                            product_offatom.metadata[key] = value
+                        except InvalidAtomMetadataError:
+                            pass
+
+        yield tuple(product_offmols)
