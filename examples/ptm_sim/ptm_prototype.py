@@ -1,8 +1,7 @@
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from pathlib import Path
-from collections.abc import Iterable
 
 import openmm
 import openmm.app
@@ -282,6 +281,9 @@ def react(
                     for query, match in enumerate(
                         reactant_rdmol.GetSubstructMatch(reactant_template)
                     )
+                    if reactant_template.GetAtomWithIdx(query).HasProp(
+                        "molAtomMapNumber"
+                    )
                 }
             )
 
@@ -292,7 +294,7 @@ def react(
             for product in products:
                 product.UpdatePropertyCache()
                 rdkit.Chem.SanitizeMol(product)
-        except rdkit.MolSanitizeException:
+        except rdkit.Chem.rdchem.MolSanitizeException:
             continue
 
         product_offmols = [Molecule.from_rdkit(product) for product in products]
@@ -307,14 +309,15 @@ def react(
                     product_rdatom = product_rdmol.GetAtomWithIdx(product_idx)
                     product_offatom = product_offmol.atom(product_idx)
 
-                    rxn_map = product_rdatom.GetProp("old_mapno")
-                    reactant_offatom = map_to_offatom[rxn_map]
-                    product_offatom.metadata.update(reactant_offatom.metadata)
-                    if "leaving_atom" in product_offatom.metadata:
-                        product_offatom.metadata["leaving_atom"] = False
-                    if "substructure_atom" in product_offatom.metadata:
-                        product_offatom.metadata["substructure_atom"] = True
-                    product_offatom.name = reactant_offatom.name
+                    if product_rdatom.HasProp("old_mapno"):
+                        rxn_map = product_rdatom.GetProp("old_mapno")
+                        reactant_offatom = map_to_offatom[rxn_map]
+                        product_offatom.metadata.update(reactant_offatom.metadata)
+                        if "leaving_atom" in product_offatom.metadata:
+                            product_offatom.metadata["leaving_atom"] = False
+                        if "substructure_atom" in product_offatom.metadata:
+                            product_offatom.metadata["substructure_atom"] = True
+                        product_offatom.name = reactant_offatom.name
 
                 # Copy the props back to the metadata
                 for product_rdatom, product_offatom in zip(
