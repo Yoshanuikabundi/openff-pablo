@@ -368,7 +368,7 @@ class PdbData:
 
         yield tuple(indices)
 
-    def subset_matches_residue(
+    def subset_matches_residue_names(
         self,
         res_atom_idcs: Sequence[int],
         residue_definition: ResidueDefinition,
@@ -503,7 +503,7 @@ class PdbData:
 
             residue_matches: list[ResidueMatch] = []
             for residue_definition in residue_database.get(res_name, []):
-                match = self.subset_matches_residue(
+                match = self.subset_matches_residue_names(
                     res_atom_idcs,
                     residue_definition,
                 )
@@ -513,7 +513,7 @@ class PdbData:
 
             if len(residue_matches) == 0:
                 for residue_definition in additional_substructures:
-                    match = self.subset_matches_residue(
+                    match = self.subset_matches_residue_names(
                         res_atom_idcs,
                         residue_definition,
                     )
