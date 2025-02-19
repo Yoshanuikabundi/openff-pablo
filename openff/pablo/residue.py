@@ -11,6 +11,7 @@ from functools import cached_property
 from io import StringIO
 from typing import Literal, Self
 
+from networkx import Graph
 from openff.toolkit import Molecule
 from openff.units import elements, unit
 from openmm.app.pdbxfile import PdbxReader
@@ -641,6 +642,12 @@ class ResidueDefinition:
         )
 
         return molecule
+
+    def to_graph(self) -> Graph[AtomDefinition]:
+        graph: Graph[AtomDefinition] = Graph()
+        for bond in self.bonds:
+            graph.add_edge(self.name_to_atom[bond.atom1], self.name_to_atom[bond.atom2])
+        return graph
 
     @cached_property
     def name_to_atom(self) -> dict[str, AtomDefinition]:

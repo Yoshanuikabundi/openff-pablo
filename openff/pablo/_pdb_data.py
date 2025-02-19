@@ -9,6 +9,8 @@ from io import TextIOBase
 from os import PathLike
 from typing import IO, Any, DefaultDict, Self
 
+import networkx
+
 from ._utils import __UNSET__, dec_hex, int_or_none, with_neighbours
 from .exceptions import (
     UnknownOrAmbiguousSerialInConectError,
@@ -482,6 +484,44 @@ class PdbData:
             logging.debug("    Match failed: Missing atoms do not specify link")
             return None
 
+    def subset_matches_residue_conect(
+        self,
+        res_atom_idcs: Sequence[int],
+        residue_definition: ResidueDefinition,
+    ) -> ResidueMatch | None:
+        conect_graph = networkx.Graph()
+        for a in res_atom_idcs:
+            conect_graph.add_node(a, elem_charge=(self.element[a], self.charge[a]))
+            for b in self.conects[a]:
+                if b in res_atom_idcs:
+                    conect_graph.add_node(
+                        b,
+                        elem_charge=(self.element[b], self.charge[b]),
+                    )
+                    conect_graph.add_edge(a, b)
+        resdef_graph = residue_definition.to_graph()
+        networkx.set_node_attributes(
+            resdef_graph,
+            {
+                atom: {"elem_charge": (atom.symbol, atom.charge)}
+                for atom in resdef_graph.nodes
+            },
+        )
+
+        isomorphism = networkx.vf2pp_isomorphism(
+            conect_graph,
+            resdef_graph,
+            node_label="elem_charge",
+        )
+        if isomorphism is None:
+            return None
+        else:
+            return ResidueMatch(
+                residue_definition=residue_definition,
+                index_to_atomdef=isomorphism,
+                crosslink=None,
+            )
+
     def get_residue_matches(
         self,
         residue_database: Mapping[str, Iterable[ResidueDefinition]],
@@ -510,6 +550,16 @@ class PdbData:
 
                 if match is not None:
                     residue_matches.append(match)
+
+            if len(residue_matches) == 0:
+                for residue_definition in residue_database.get(res_name, []):
+                    match = self.subset_matches_residue_conect(
+                        res_atom_idcs,
+                        residue_definition,
+                    )
+
+                    if match is not None:
+                        residue_matches.append(match)
 
             if len(residue_matches) == 0:
                 for residue_definition in additional_substructures:

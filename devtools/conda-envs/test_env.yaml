@@ -9,6 +9,7 @@ dependencies:
   - rdkit
   - openmm
   - pyxdg
+  - networkx
 
   # Lints
   - basedpyright
