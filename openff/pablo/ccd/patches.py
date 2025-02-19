@@ -4,7 +4,7 @@ Patches to add essential features to the CCD.
 
 from itertools import combinations
 
-from openff.pablo.chem import DISULFIDE_BOND
+from openff.pablo.chem import DISULFIDE_BOND, PEPTIDE_BOND
 
 from .._utils import flatten, unwrap
 from ..residue import (
@@ -12,7 +12,6 @@ from ..residue import (
     BondDefinition,
     ResidueDefinition,
 )
-from ._ccdcache import PEPTIDE_BOND
 
 __all__ = [
     "ACIDIC_PROTONS",

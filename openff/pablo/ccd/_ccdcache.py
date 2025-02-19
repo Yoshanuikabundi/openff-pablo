@@ -1,17 +1,12 @@
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from copy import deepcopy
-from io import StringIO
 from pathlib import Path
-from typing import Self, no_type_check
+from typing import Self
 from urllib.request import urlopen
 
 import xdg.BaseDirectory as xdg_base_dir
-from openmm.app.internal.pdbx.reader.PdbxReader import PdbxReader
 
-from ..chem import PEPTIDE_BOND, PHOSPHODIESTER_BOND
 from ..residue import (
-    AtomDefinition,
-    BondDefinition,
     ResidueDefinition,
     _skip_residue_definition_validation,
 )
@@ -142,7 +137,7 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         return definitions
 
     def _add_definition_from_str(self, s: str, res_name: str | None = None) -> None:
-        definition = self._res_def_from_ccd_str(s)
+        definition = ResidueDefinition.from_ccd_cif_str(s)
         self._add_and_patch_definition(definition, res_name)
 
     def _add_and_patch_definition(
@@ -186,89 +181,6 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
         for path in self._paths:
             yield from path.glob(pattern)
 
-    @staticmethod
-    def _res_def_from_ccd_str(s: str) -> ResidueDefinition:
-        @no_type_check
-        def inner(s):
-            # TODO: Handle residues like CL with a single atom properly (no tables)
-            data = []
-            with StringIO(s) as file:
-                PdbxReader(file).read(data)
-            block = data[0]
-
-            parent_residue_name = (
-                block.getObj("chem_comp").getValue("mon_nstd_parent_comp_id").upper()
-            )
-            parent_residue_name = (
-                None if parent_residue_name == "?" else parent_residue_name
-            )
-            residueName = block.getObj("chem_comp").getValue("id").upper()
-            residue_description = block.getObj("chem_comp").getValue("name")
-            linking_type = block.getObj("chem_comp").getValue("type").upper()
-            linking_bond = LINKING_TYPES[linking_type]
-
-            atomData = block.getObj("chem_comp_atom")
-            atomNameCol = atomData.getAttributeIndex("atom_id")
-            altAtomNameCol = atomData.getAttributeIndex("alt_atom_id")
-            symbolCol = atomData.getAttributeIndex("type_symbol")
-            leavingCol = atomData.getAttributeIndex("pdbx_leaving_atom_flag")
-            chargeCol = atomData.getAttributeIndex("charge")
-            aromaticCol = atomData.getAttributeIndex("pdbx_aromatic_flag")
-            stereoCol = atomData.getAttributeIndex("pdbx_stereo_config")
-
-            atoms = [
-                AtomDefinition(
-                    name=row[atomNameCol],
-                    synonyms=tuple(
-                        [row[altAtomNameCol]]
-                        if row[altAtomNameCol] != row[atomNameCol]
-                        else [],
-                    ),
-                    symbol=row[symbolCol][0:1].upper() + row[symbolCol][1:].lower(),
-                    leaving=row[leavingCol] == "Y",
-                    charge=int(row[chargeCol]),
-                    aromatic=row[aromaticCol] == "Y",
-                    stereo=None if row[stereoCol] == "N" else row[stereoCol],
-                )
-                for row in atomData.getRowList()
-            ]
-
-            bondData = block.getObj("chem_comp_bond")
-            if bondData is not None:
-                atom1Col = bondData.getAttributeIndex("atom_id_1")
-                atom2Col = bondData.getAttributeIndex("atom_id_2")
-                orderCol = bondData.getAttributeIndex("value_order")
-                aromaticCol = bondData.getAttributeIndex("pdbx_aromatic_flag")
-                stereoCol = bondData.getAttributeIndex("pdbx_stereo_config")
-                bonds = [
-                    BondDefinition(
-                        atom1=row[atom1Col],
-                        atom2=row[atom2Col],
-                        order={"SING": 1, "DOUB": 2, "TRIP": 3, "QUAD": 4}[
-                            row[orderCol]
-                        ],
-                        aromatic=row[aromaticCol] == "Y",
-                        stereo=None if row[stereoCol] == "N" else row[stereoCol],
-                    )
-                    for row in bondData.getRowList()
-                ]
-            else:
-                bonds = []
-
-            with _skip_residue_definition_validation():
-                residue_definition = ResidueDefinition(
-                    residue_name=residueName,
-                    description=residue_description,
-                    linking_bond=linking_bond,
-                    crosslink=None,
-                    atoms=tuple(atoms),
-                    bonds=tuple(bonds),
-                )
-
-            return residue_definition
-
-        return inner(s)
-
     def __contains__(self, value: object) -> bool:
         if value in self._definitions:
             return True
@@ -300,38 +212,3 @@ class CcdCache(Mapping[str, list[ResidueDefinition]]):
             new._extra_definitions_set = True
             new._add_definitions(resdefs, resname)
         return new
-
-
-# TODO: Fill in this data
-LINKING_TYPES: dict[str, BondDefinition | None] = {
-    # "D-beta-peptide, C-gamma linking".upper(): [],
-    # "D-gamma-peptide, C-delta linking".upper(): [],
-    # "D-peptide COOH carboxy terminus".upper(): [],
-    # "D-peptide NH3 amino terminus".upper(): [],
-    # "D-peptide linking".upper(): [],
-    # "D-saccharide".upper(): [],
-    # "D-saccharide, alpha linking".upper(): [],
-    # "D-saccharide, beta linking".upper(): [],
-    # "DNA OH 3 prime terminus".upper(): [],
-    # "DNA OH 5 prime terminus".upper(): [],
-    "DNA linking".upper(): PHOSPHODIESTER_BOND,
-    "L-DNA linking".upper(): PHOSPHODIESTER_BOND,
-    "L-RNA linking".upper(): PHOSPHODIESTER_BOND,
-    # "L-beta-peptide, C-gamma linking".upper(): [],
-    # "L-gamma-peptide, C-delta linking".upper(): [],
-    # "L-peptide COOH carboxy terminus".upper(): [],
-    # "L-peptide NH3 amino terminus".upper(): [],
-    "L-peptide linking".upper(): PEPTIDE_BOND,
-    # "L-saccharide".upper(): [],
-    # "L-saccharide, alpha linking".upper(): [],
-    # "L-saccharide, beta linking".upper(): [],
-    # "RNA OH 3 prime terminus".upper(): [],
-    # "RNA OH 5 prime terminus".upper(): [],
-    "RNA linking".upper(): PHOSPHODIESTER_BOND,
-    "non-polymer".upper(): None,
-    # "other".upper(): [],
-    "peptide linking".upper(): PEPTIDE_BOND,
-    "peptide-like".upper(): PEPTIDE_BOND,
-    # "saccharide".upper(): [],
-}
-"""Map from the CCD's linking types to the bond formed between two such monomers"""
