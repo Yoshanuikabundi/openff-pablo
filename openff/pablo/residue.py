@@ -8,10 +8,13 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cached_property
+from io import StringIO
 from typing import Literal, Self
 
+from networkx import Graph
 from openff.toolkit import Molecule
 from openff.units import elements, unit
+from openmm.app.pdbxfile import PdbxReader
 
 from openff.pablo._utils import __UNSET__, unwrap
 
@@ -24,7 +27,7 @@ _residue_definition_skip_validation = False
 
 
 @contextmanager
-def _skip_residue_definition_validation():  # type: ignore[deadcode]
+def _skip_residue_definition_validation():
     global _residue_definition_skip_validation
     _residue_definition_skip_validation = True
     yield
@@ -524,6 +527,85 @@ class ResidueDefinition:
             crosslink=crosslink,
         )
 
+    @classmethod
+    def from_ccd_cif_str(cls, s: str) -> Self:
+        from openff.pablo.chem import _LINKING_TYPES
+
+        # TODO: Handle residues like CL with a single atom properly (no tables)
+        data = []
+        with StringIO(s) as file:
+            PdbxReader(file).read(data)
+        block = data[0]
+
+        parent_residue_name = (
+            block.getObj("chem_comp").getValue("mon_nstd_parent_comp_id").upper()
+        )
+        parent_residue_name = (
+            None if parent_residue_name == "?" else parent_residue_name
+        )
+        residueName = block.getObj("chem_comp").getValue("id").upper()
+        residue_description = block.getObj("chem_comp").getValue("name")
+        linking_type = block.getObj("chem_comp").getValue("type").upper()
+        linking_bond = _LINKING_TYPES[linking_type]
+
+        atomData = block.getObj("chem_comp_atom")
+        atomNameCol = atomData.getAttributeIndex("atom_id")
+        altAtomNameCol = atomData.getAttributeIndex("alt_atom_id")
+        symbolCol = atomData.getAttributeIndex("type_symbol")
+        leavingCol = atomData.getAttributeIndex("pdbx_leaving_atom_flag")
+        chargeCol = atomData.getAttributeIndex("charge")
+        aromaticCol = atomData.getAttributeIndex("pdbx_aromatic_flag")
+        stereoCol = atomData.getAttributeIndex("pdbx_stereo_config")
+
+        atoms = [
+            AtomDefinition(
+                name=row[atomNameCol],
+                synonyms=tuple(
+                    [row[altAtomNameCol]]
+                    if row[altAtomNameCol] != row[atomNameCol]
+                    else [],
+                ),
+                symbol=row[symbolCol][0:1].upper() + row[symbolCol][1:].lower(),
+                leaving=row[leavingCol] == "Y",
+                charge=int(row[chargeCol]),
+                aromatic=row[aromaticCol] == "Y",
+                stereo=None if row[stereoCol] == "N" else row[stereoCol],
+            )
+            for row in atomData.getRowList()
+        ]
+
+        bondData = block.getObj("chem_comp_bond")
+        if bondData is not None:
+            atom1Col = bondData.getAttributeIndex("atom_id_1")
+            atom2Col = bondData.getAttributeIndex("atom_id_2")
+            orderCol = bondData.getAttributeIndex("value_order")
+            aromaticCol = bondData.getAttributeIndex("pdbx_aromatic_flag")
+            stereoCol = bondData.getAttributeIndex("pdbx_stereo_config")
+            bonds = [
+                BondDefinition(
+                    atom1=row[atom1Col],
+                    atom2=row[atom2Col],
+                    order={"SING": 1, "DOUB": 2, "TRIP": 3, "QUAD": 4}[row[orderCol]],
+                    aromatic=row[aromaticCol] == "Y",
+                    stereo=None if row[stereoCol] == "N" else row[stereoCol],
+                )
+                for row in bondData.getRowList()
+            ]
+        else:
+            bonds = []
+
+        with _skip_residue_definition_validation():
+            residue_definition = cls(
+                residue_name=residueName,
+                description=residue_description,
+                linking_bond=linking_bond,
+                crosslink=None,
+                atoms=tuple(atoms),
+                bonds=tuple(bonds),
+            )
+
+        return residue_definition
+
     def to_openff_molecule(self) -> Molecule:
         molecule = Molecule()
         atoms: dict[str, int] = {}
@@ -560,6 +642,12 @@ class ResidueDefinition:
         )
 
         return molecule
+
+    def to_graph(self) -> Graph[AtomDefinition]:
+        graph: Graph[AtomDefinition] = Graph()
+        for bond in self.bonds:
+            graph.add_edge(self.name_to_atom[bond.atom1], self.name_to_atom[bond.atom2])
+        return graph
 
     @cached_property
     def name_to_atom(self) -> dict[str, AtomDefinition]:

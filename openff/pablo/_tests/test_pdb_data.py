@@ -365,7 +365,7 @@ class TestPdbData:
         cys_def: ResidueDefinition,
     ):
         with pytest.raises(ValueError):
-            hewl_data.subset_matches_residue([], cys_def)
+            hewl_data.subset_matches_residue_names([], cys_def)
 
     def test_subset_matches_residue_succeeds_when_all_atoms_present(
         self,
@@ -373,7 +373,7 @@ class TestPdbData:
         cys_data: PdbData,
     ):
         assert (
-            cys_data.subset_matches_residue(
+            cys_data.subset_matches_residue_names(
                 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
                 cys_def,
             )
@@ -399,7 +399,7 @@ class TestPdbData:
                 name=["H1", "H"],
                 charge=charges,
                 element=elements,
-            ).subset_matches_residue([0, 1], res_def)
+            ).subset_matches_residue_names([0, 1], res_def)
             is None
         )
         assert (
@@ -407,7 +407,7 @@ class TestPdbData:
                 name=["O", "H"],
                 charge=charges,
                 element=elements,
-            ).subset_matches_residue([0, 1], res_def)
+            ).subset_matches_residue_names([0, 1], res_def)
             is not None
         )
 
@@ -418,7 +418,7 @@ class TestPdbData:
     ):
         leaving_atoms = {atom.name for atom in cys_def.atoms if atom.leaving}
         assert (
-            cys_data.subset_matches_residue(
+            cys_data.subset_matches_residue_names(
                 [
                     i
                     for i, name in enumerate(cys_data.name)
@@ -438,7 +438,7 @@ class TestPdbData:
         assert cys_data.name[1] == "CA"
         assert cys_def.name_to_atom["CA"].leaving is False
         assert (
-            cys_data.subset_matches_residue(
+            cys_data.subset_matches_residue_names(
                 [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
                 cys_def,
             )
@@ -453,7 +453,7 @@ class TestPdbData:
         # Missing atom 13 (HXT), one of two posterior bond leaving atoms
         assert cys_data.name[13] == "HXT"
         assert (
-            cys_data.subset_matches_residue(
+            cys_data.subset_matches_residue_names(
                 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                 cys_def,
             )
@@ -473,7 +473,7 @@ class TestPdbData:
             if name not in getattr(cys_def, bond_name + "_leaving_atoms")
         ]
         assert len(subset) in [12, 13]
-        assert cys_data.subset_matches_residue(subset, cys_def) is not None
+        assert cys_data.subset_matches_residue_names(subset, cys_def) is not None
 
     def test_subset_matches_residue_fails_on_element_mismatch(
         self,
@@ -482,7 +482,8 @@ class TestPdbData:
     ):
         cys_data.element[5] = "Zr"
         assert (
-            cys_data.subset_matches_residue(range(len(cys_def.atoms)), cys_def) is None
+            cys_data.subset_matches_residue_names(range(len(cys_def.atoms)), cys_def)
+            is None
         )
 
     def test_subset_matches_residue_tolerates_none_charge_and_empty_element(self):
@@ -495,7 +496,7 @@ class TestPdbData:
             residue_name="HPL",
         )
         data = PdbData(name=["H"], element=[""], charge=[None])
-        assert data.subset_matches_residue([0], resdef) is not None
+        assert data.subset_matches_residue_names([0], resdef) is not None
 
     def test_subset_matches_residue_tolerates_wrong_case_element(self):
         resdef = ResidueDefinition(
@@ -507,7 +508,7 @@ class TestPdbData:
             residue_name="HPL",
         )
         data = PdbData(name=["H"], element=["h"], charge=[1])
-        assert data.subset_matches_residue([0], resdef) is not None
+        assert data.subset_matches_residue_names([0], resdef) is not None
 
     def test_get_residue_matches_loads_vicinal_disulfide(
         self,

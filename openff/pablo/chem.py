@@ -33,3 +33,37 @@ PHOSPHODIESTER_BOND = BondDefinition(
     aromatic=False,
     stereo=None,
 )
+
+# TODO: Fill in this data
+_LINKING_TYPES: dict[str, BondDefinition | None] = {
+    # "D-beta-peptide, C-gamma linking".upper(): [],
+    # "D-gamma-peptide, C-delta linking".upper(): [],
+    # "D-peptide COOH carboxy terminus".upper(): [],
+    # "D-peptide NH3 amino terminus".upper(): [],
+    # "D-peptide linking".upper(): [],
+    # "D-saccharide".upper(): [],
+    # "D-saccharide, alpha linking".upper(): [],
+    # "D-saccharide, beta linking".upper(): [],
+    # "DNA OH 3 prime terminus".upper(): [],
+    # "DNA OH 5 prime terminus".upper(): [],
+    "DNA linking".upper(): PHOSPHODIESTER_BOND,
+    "L-DNA linking".upper(): PHOSPHODIESTER_BOND,
+    "L-RNA linking".upper(): PHOSPHODIESTER_BOND,
+    # "L-beta-peptide, C-gamma linking".upper(): [],
+    # "L-gamma-peptide, C-delta linking".upper(): [],
+    # "L-peptide COOH carboxy terminus".upper(): [],
+    # "L-peptide NH3 amino terminus".upper(): [],
+    "L-peptide linking".upper(): PEPTIDE_BOND,
+    # "L-saccharide".upper(): [],
+    # "L-saccharide, alpha linking".upper(): [],
+    # "L-saccharide, beta linking".upper(): [],
+    # "RNA OH 3 prime terminus".upper(): [],
+    # "RNA OH 5 prime terminus".upper(): [],
+    "RNA linking".upper(): PHOSPHODIESTER_BOND,
+    "non-polymer".upper(): None,
+    # "other".upper(): [],
+    "peptide linking".upper(): PEPTIDE_BOND,
+    "peptide-like".upper(): PEPTIDE_BOND,
+    # "saccharide".upper(): [],
+}
+"""Map from the CCD's linking types to the bond formed between two such monomers"""
